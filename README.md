@@ -184,9 +184,9 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-path('admin/', admin.site.urls),
-path('subsystem1/', include('apps.subsystem1.config.urls', namespace='subsystem1')),
-path('subsystem2/', include('apps.subsystem2.config.urls', namespace='subsystem2')),
+	path('admin/', admin.site.urls),
+	path('subsystem1/', include('apps.subsystem1.config.urls', namespace='subsystem1')),
+	path('subsystem2/', include('apps.subsystem2.config.urls', namespace='subsystem2')),
 ]
 ```
 #### 示例子系统级别 urls.py
@@ -195,7 +195,149 @@ path('subsystem2/', include('apps.subsystem2.config.urls', namespace='subsystem2
 from django.urls import path, include
 
 urlpatterns = [
-path('module1/', include('apps.subsystem1.modules.module1.urls', namespace='module1')),
-path('module2/', include('apps.subsystem1.modules.module2.urls', namespace='module2')),
+	path('module1/', include('apps.subsystem1.modules.module1.urls', namespace='module1')),
+	path('module2/', include('apps.subsystem1.modules.module2.urls', namespace='module2')),
 ]
 ```
+
+## 创建应用
+
+在项目所在目录执行命令，创建一个应用模块
+
+```sh
+# 激活环境
+E:\codespace\django_examples$ myvenv\Scripts\activate
+
+# 创建应用 blog
+(.venv) E:\codespace\django_examples$ python manage.py startapp blog
+```
+
+应用`blog` 目录结构如下：
+
+```
+└── blog
+    ├── migrations
+    |       __init__.py
+    ├── __init__.py
+    ├── admin.py
+    ├── models.py
+    ├── tests.py
+    └── views.py
+```
+
+找到 `INSTALLED_APPS` 并在它下面添加一行`'blog'` 。 所以最终的代码应如下所示：
+
+```
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'blog',
+)
+```
+
+## 创建模型
+
+打开 `blog/models.py`，编写这样的代码：
+
+```python
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
+class Post(models.Model):
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    text = models.TextField()
+    created_date = models.DateTimeField(
+            default=timezone.now)
+    published_date = models.DateTimeField(
+            blank=True, null=True)
+
+    def publish(self):
+        self.published_date = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return self.title
+```
+
+模型字段类型介绍：[模型字段参考 | Django 文档 | Django](https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/)
+
+创建模型对于的数据库表：
+
+```sh
+$ python manage.py makemigrations blog
+
+Migrations for 'blog':
+  0001_initial.py:
+  - Create model Post
+```
+
+数据库迁移文件：
+
+```sh
+$ python manage.py migrate blog
+
+System check identified some issues:
+
+WARNINGS:
+blog.Post.status: (fields.W163) SQLite does not support comments on columns (db_comment).
+Operations to perform:
+  Apply all migrations: blog
+Running migrations:
+  Applying blog.0001_initial... OK
+```
+
+## 管理后台
+
+为了让我们的模型在admin页面上可见，我们需要使用 `admin.site.register(Post)` 来注册模型：
+
+```python
+from django.contrib import admin
+
+# Register your models here.
+from .models import Post
+
+admin.site.register(Post)
+```
+
+运行命令`python manage.py runserver` 启动服务，进入管理后台 `http://127.0.0.1:8000/admin/`：
+
+```cmd
+$ python manage.py runserver
+
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+November 18, 2024 - 16:44:53
+Django version 5.1.3, using settings 'django_examples.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+[18/Nov/2024 16:44:58] "GET / HTTP/1.1" 200 12068
+[18/Nov/2024 16:44:58] "GET / HTTP/1.1" 200 12068
+Not Found: /favicon.ico
+```
+
+创建用户进行登录操作，来管理后台接口：
+
+```sh
+$ python manage.py createsuperuser
+
+Username (leave blank to use 'xxx'): admin
+Email address: admin@qq.com
+Password: 
+Password (again): 
+This password is too short. It must contain at least 8 characters.
+This password is too common.
+This password is entirely numeric.
+Bypass password validation and create user anyway? [y/N]: y
+Superuser created successfully.
+```
+
