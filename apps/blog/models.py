@@ -16,3 +16,9 @@ class Post(models.Model):
         self.save()
 
     __str__ = lambda self: self.title
+
+class Tags(models.Model):
+    tag_name = models.CharField(max_length=50, blank=False, null=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+
+    __str__ = lambda self: self.tag_name
