@@ -11,7 +11,7 @@ class Question(models.Model):
     question_text = models.CharField(max_length=200)
     published_date = models.DateTimeField('date published')
 
-    __str__ = lambda self: self.question_text
+    __str__ = lambda self: f"title: {self.question_text}, date: {self.published_date}"
 
     def was_published_recently(self):
         return self.published_date >= timezone.now() - datetime.timedelta(days=1)
