@@ -1,20 +1,20 @@
-{% load staticfiles %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>post list</title>
-    <link rel="stylesheet" href="{% static 'static/blog/css/post_list.css' %}">
 </head>
 <body>
     <div class="page-header">
-        <h1><a href="/">Django Girls Blog</a></h1>
+        <h1><a href="/blog/">Django Girls Blog</a></h1>
     </div>
 
     <div class="post">
-        <p>published: {{ post.published_date }}</p>
-        <h1><a href="">{{ post.title }}</a></h1>
-        <p>{{ post.text|linebreaksbr }}</p>
+        {% for post in latest_blog_list %}
+            <p>published: {{ post.published_date }}</p>
+            <h1><a href="{% url 'blog:detail' pk=post.id %}">{{ post.title }}</a></h1>
+            <p>{{ post.text|linebreaksbr }}</p>
+        {% endfor %}
     </div>
 </body>
 </html>

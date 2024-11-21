@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>文章</title>
+</head>
+<body>
+     <p>
+       <h1>title: {{ post.title }}</h1>
+       <li>{{ post.content }}</li>
+       <li>author: {{ post.author }}</li>
+       <li>created_date: {{ post.created_date }}</li>
+       <li>published_date: {{ post.published_date }}</li>
+       <li>status: {{ post.status }}</li>
+       <li>tags_set: {{ post.tags_set.all }}</li>
+     </p>
+    <div>
+        <form action="{% url 'blog:make' post.pk %}" method="post">
+            <!-- 跨域防御控制 -->
+            {% csrf_token %}
+            <fieldset>
+                <input type="text" name="tag_name">
+                <input type="submit" value="make">
+            </fieldset>
+        </form>
+    </div>
+</body>
+</html>
