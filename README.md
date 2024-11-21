@@ -278,6 +278,43 @@ Migrations for 'blog':
   - Create model Post
 ```
 
+查看命令执行的脚本：
+
+```sh
+$ python manage.py sqlmigrate polls 0001
+
+System check identified some issues:
+
+WARNINGS:
+?: (2_0.W001) Your URL pattern '^$' [name='post_list'] has a route that contains '(?P<', begins with a '^', or ends with a '$'. This was likely an oversight when migrating to django.urls.path().
+BEGIN;
+--
+-- Create model Question
+--
+CREATE TABLE "polls_question" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "question_text" varchar(200) NOT NULL, "published_date" datetime NOT NULL);
+--
+-- Create model Choice
+--
+CREATE TABLE "polls_choice" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "choice_text" varchar(200) NOT NULL, "votes" integer NOT NULL, "question_id" bigint NOT NULL REFERENCES "polls_question" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "polls_choice_question_id_c5b4b260" ON "polls_choice" ("question_id");
+COMMIT;
+```
+
+检查代码存在的问题：
+
+```sh
+$ python manage.py check
+
+System check identified some issues:
+
+WARNINGS:
+?: (2_0.W001) Your URL pattern '^$' [name='post_list'] has a route that contains '(?P<', begins with a '^', or ends with a '$'. This was likely an oversight when migrating to django.urls.path().
+
+System check identified 1 issue (0 silenced).
+```
+
+
+
 数据库迁移文件：
 
 ```sh
@@ -292,6 +329,14 @@ Operations to perform:
 Running migrations:
   Applying blog.0001_initial... OK
 ```
+
+## 改变模型
+
+改变模型需要这三步：
+
+- 编辑 `models.py` 文件，改变模型。
+- 运行 [`python manage.py makemigrations`](https://docs.djangoproject.com/zh-hans/5.1/ref/django-admin/#django-admin-makemigrations) 为模型的改变生成迁移文件。
+- 运行 [`python manage.py migrate`](https://docs.djangoproject.com/zh-hans/5.1/ref/django-admin/#django-admin-migrate) 来应用数据库迁移。
 
 ## 管理后台
 
@@ -339,5 +384,80 @@ This password is too common.
 This password is entirely numeric.
 Bypass password validation and create user anyway? [y/N]: y
 Superuser created successfully.
+```
+
+## 收集静态文件
+
+安装依赖：` pip install django whitenoise`
+
+```sh
+$ python manage.py collectstatic
+
+You have requested to collect static files at the destination
+location as specified in your settings:
+
+/home/edith/my-first-blog/static
+
+This will overwrite existing files!
+Are you sure you want to do this?
+
+Type 'yes' to continue, or 'no' to cancel: yes
+```
+
+## 设置URLs
+
+在 `blog` 模块下的 `urls.py`
+
+```py
+urlpatterns = [
+    path(r'^$', views.post_list, name='post_list'),
+]
+```
+
+在全局 `settings.py` 中加入 url 配置：
+
+```py
+urlpatterns = [
+   path('admin/', admin.site.urls),
+
+   path(r'', include('apps.blog.urls')),
+]
+```
+
+## 创建视图
+
+视图可以接收和传递数据到页面，直接展示给用户
+
+```python
+def post_list(request):
+    return render(request, 'blog/post_list.html', {})
+```
+
+创建一个方法 (`def`) ，命名为 `post_list` ，它接受 `request` 参数作为输入， 并 `return` （返回）用 `render` 方法渲染模板 `blog/post_list.html` 而得到的结果。
+
+## ORM 和 QuerySets
+
+`ORM` 完成数据库持久化操作，`QuerySets` 查询列表集合操作。
+
+### Shell
+
+使用命令行进行`shell`操作
+
+```sh
+$ python manage.py shell
+
+# 导入依赖
+>>> from blog.models import Post
+
+# 查询列表
+>>> Post.objects.all()
+
+# 导入user
+>>> from django.contrib.auth.models import User
+
+# 创建 Post
+>>> user = User.objects.get(username='admin') 
+>>> Post.objects.create(author=user, title='Sample title', content='Test')
+>>> Post.objects.all()
 ```
 
