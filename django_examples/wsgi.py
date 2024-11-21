@@ -12,5 +12,11 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_examples.settings')
-
 application = get_wsgi_application()
+
+# path = '/home/<your-username>/my-first-blog'  # use your own username here
+# if path not in sys.path:
+#     sys.path.append(path)
+#
+# from whitenoise.django import DjangoWhiteNoise
+# application = DjangoWhiteNoise(get_wsgi_application())
