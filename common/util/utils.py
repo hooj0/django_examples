@@ -14,8 +14,10 @@ def object_to_string(obj, max_length=10):
             masked_value = value[:3] + '*' * (min(len(value), max_length) - 3)
         elif isinstance(value, (int, float)):
             masked_value = str(value)
+        elif isinstance(value, object):
+            masked_value = "未知"
         else:
-            masked_value = 'Unknown'
+            masked_value = value
 
         # 添加属性到结果列表
         result.append(f"{key}: {masked_value}")
