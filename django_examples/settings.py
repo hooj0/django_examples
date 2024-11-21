@@ -29,15 +29,25 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+# migrate 命令会针对一下app进行数据库迁移
 INSTALLED_APPS = [
+    # gui 管理员后台框架
     'django.contrib.admin',
+    # 认证框架
     'django.contrib.auth',
+    # 内容类型框架
     'django.contrib.contenttypes',
+    # 会话框架
     'django.contrib.sessions',
+    # 消息框架
     'django.contrib.messages',
+    # 管理静态文件的框架
     'django.contrib.staticfiles',
-    'blog',
+
+    # 加入 blog app
+    'apps.blog',
+    # 加入 polls app
+    'apps.polls.apps.PollsConfig',
 ]
 
 MIDDLEWARE = [
@@ -55,8 +65,7 @@ ROOT_URLCONF = 'django_examples.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -116,7 +125,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = 'static/'
 
 # Default primary key field type
