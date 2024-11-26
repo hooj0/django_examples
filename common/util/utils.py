@@ -1,8 +1,8 @@
-def object_to_string(obj, max_length=10):
+def object_to_string(obj, max_length=15):
     """
     将对象转换为字符串
     :param obj: 要转换的对象
-    :param max_length: 属性值的最大长度，默认为10
+    :param max_length: 属性值的最大长度，默认为15
     :return: 字符串表示
     """
     attributes = vars(obj)  # 获取对象的所有属性
@@ -11,7 +11,7 @@ def object_to_string(obj, max_length=10):
     for key, value in attributes.items():
         # 对敏感信息进行脱敏处理
         if isinstance(value, str):
-            masked_value = value[:3] + '*' * (min(len(value), max_length) - 3)
+            masked_value = value[:10] + '*' * (min(len(value), max_length) - 10)
         elif isinstance(value, (int, float)):
             masked_value = str(value)
         elif isinstance(value, object):
