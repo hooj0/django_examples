@@ -268,7 +268,7 @@ class Post(models.Model):
 
 模型字段类型介绍：[模型字段参考 | Django 文档 | Django](https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/)
 
-创建模型对于的数据库表：
+### 创建模型数据库表
 
 ```sh
 $ python manage.py makemigrations blog
@@ -278,7 +278,7 @@ Migrations for 'blog':
   - Create model Post
 ```
 
-查看命令执行的脚本：
+### 查看命令执行的脚本
 
 ```sh
 $ python manage.py sqlmigrate polls 0001
@@ -300,7 +300,7 @@ CREATE INDEX "polls_choice_question_id_c5b4b260" ON "polls_choice" ("question_id
 COMMIT;
 ```
 
-检查代码存在的问题：
+### 检查代码存在的问题
 
 ```sh
 $ python manage.py check
@@ -313,9 +313,7 @@ WARNINGS:
 System check identified 1 issue (0 silenced).
 ```
 
-
-
-数据库迁移文件：
+### 执行数据库迁移文件
 
 ```sh
 $ python manage.py migrate blog
@@ -329,6 +327,56 @@ Operations to perform:
 Running migrations:
   Applying blog.0001_initial... OK
 ```
+
+### 显示已经执行过的迁移文件
+
+```sh
+# 查看所有迁移文件
+$ python manage.py showmigrations
+
+$ python manage.py showmigrations blog -l
+blog
+ [X] 0001_initial
+ [X] 0002_tags
+ [X] 0003_category_comment
+ [ ] 0004_comment_email_comment_file_comment_file_path_and_more
+ [ ] 0005_alter_comment_interval
+ [ ] 0006_alter_comment_interval
+ [ ] 0007_alter_comment_interval
+ [ ] 0008_alter_comment_interval
+ [ ] 0009_alter_comment_interval
+ [ ] 0010_alter_comment_interval
+ [ ] 0011_remove_comment_interval_comment_duration_and_more
+ [ ] 0012_remove_comment_duration
+ [ ] 0013_remove_comment_pub_time
+ [ ] 0014_remove_comment_end_time_comment_pub_time
+ [ ] 0015_remove_comment_email_remove_comment_file_and_more
+ [ ] 0016_remove_comment_content_remove_comment_pub_time_and_more
+ [ ] 0017_remove_comment_created_date_and_more
+ 
+$ python manage.py showmigrations blog -p
+[X]  contenttypes.0001_initial
+[X]  auth.0001_initial
+[X]  blog.0001_initial
+[X]  blog.0002_tags
+[X]  blog.0003_category_comment
+[ ]  blog.0004_comment_email_comment_file_comment_file_path_and_more
+[ ]  blog.0005_alter_comment_interval
+[ ]  blog.0006_alter_comment_interval
+[ ]  blog.0007_alter_comment_interval
+[ ]  blog.0008_alter_comment_interval
+[ ]  blog.0009_alter_comment_interval
+[ ]  blog.0010_alter_comment_interval
+[ ]  blog.0011_remove_comment_interval_comment_duration_and_more
+[ ]  blog.0012_remove_comment_duration
+[ ]  blog.0013_remove_comment_pub_time
+[ ]  blog.0014_remove_comment_end_time_comment_pub_time
+[ ]  blog.0015_remove_comment_email_remove_comment_file_and_more
+[ ]  blog.0016_remove_comment_content_remove_comment_pub_time_and_more
+[ ]  blog.0017_remove_comment_created_date_and_more 
+```
+
+
 
 ## 改变模型
 
@@ -461,3 +509,73 @@ $ python manage.py shell
 >>> Post.objects.all()
 ```
 
+## 运行测试
+
+```sh
+$ python manage.py test polls
+```
+
+## 命令汇总
+
+官方文档：[django-admin 和 manage.py | Django 文档 | Django](https://docs.djangoproject.com/zh-hans/5.1/ref/django-admin/#top)
+
+```cmd
+# 创建虚拟环境
+python3 -m venv myvenv
+
+# 创建项目
+django-admin startproject mysite .
+
+# 创建应用
+python manage.py startapp blog
+
+# 创建admin后台超级用户
+python manage.py createsuperuser
+
+# 收集静态文件
+python manage.py collectstatic
+
+# 交互式命令
+python manage.py shell
+
+# 测试
+python manage.py test polls
+
+# 运行Web服务
+python manage.py runserver
+
+# 查看所有迁移文件
+python manage.py showmigrations
+python manage.py showmigrations blog -p
+python manage.py showmigrations blog -l
+
+# 检查代码存在的问题
+python manage.py check
+
+# 生成迁移文件
+python manage.py makemigrations blog
+
+# 执行数据库迁移
+python manage.py migrate blog
+
+# 回滚迁移文件，回滚到 0001_initial 的版本
+python manage.py migrate app_name 0001_initial
+# 重新生成
+python manage.py makemigrations app_name
+# 再次应用迁移
+python manage.py migrate
+
+# 查看命令执行的脚本
+python manage.py sqlmigrate polls 0001
+
+# 合并迁移文件
+python manage.py squashmigrations app_name start_migration end_migration
+```
+
+## 常用网址
+
++ [文档内容索引](https://docs.djangoproject.com/zh-hans/5.1/contents/)
++ [编写并运行测试](https://docs.djangoproject.com/zh-hans/5.1/topics/testing/overview/)
++ [模型](https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/#relationships)
++ [模型相关参考示例](https://docs.djangoproject.com/zh-hans/5.1/ref/models/)
++ [模型字段参考](https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#top)
