@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('category_name', models.CharField(choices=[('KP', '科普'), ('SW', '散文'), ('XS', '小说'), ('YX', '游戏')], db_comment='Category name', max_length=50)),
-                ('category_type', models.CharField(choices=apps.blog.models.Category.get_currencies, default='KP', max_length=50)),
+                ('category_type', models.CharField(default='KP', max_length=50)),
                 ('category_text', models.CharField(choices=[('KP', '科普'), ('SW', '散文'), ('XS', '小说'), ('YX', '游戏')], max_length=50, verbose_name='Category text')),
                 ('created_date', models.DateTimeField(auto_now_add=True)),
             ],
