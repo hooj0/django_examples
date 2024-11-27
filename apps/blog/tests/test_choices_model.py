@@ -49,10 +49,11 @@ class ChoicesModelTest(BasedTestCase):
 
             @staticmethod
             def valueOf(value):
-                for type in Type.values():
-                    if type.name == value:
-                        return type
+                # for type in Type:
+                #     if type.name == value:
+                #         return type
                 # return [x for x in Type.values() if x.name == value][0]
+                return next((type for type in Type if type.name == value), None)
 
         print(Type)
         print(Type.RED)
@@ -62,6 +63,8 @@ class ChoicesModelTest(BasedTestCase):
         print(Type.RED.bool)
         print(Type.valueOf("RED").value)
         print(Type.values())
+        print(list(Type))   # [<Type.RED: 1>, <Type.GREEN: 2>, <Type.BLUE: 3>]
+        print(Type.__members__.values()) # dict_values([<Type.RED: 1>, <Type.GREEN: 2>, <Type.BLUE: 3>])
 
     def test_meta_choices(self):
         class MoonLandings(datetime.date, models.Choices):
