@@ -110,7 +110,7 @@ class Choices(models.Model):
     category_type = models.CharField(max_length=2, choices=CategoryType, default=CategoryType.KP)
     level = models.CharField(max_length=2, choices=Level, db_comment='level', help_text='Level with no default value')
     region = models.CharField(max_length=2, choices=Region, default=Region.HB, help_text='Region with no default value')
-    answer = models.IntegerField(max_length=2, choices=Answer, verbose_name='answer')
+    answer = models.IntegerField(choices=Answer, verbose_name='answer', default=Answer.NO)
     suit = models.IntegerField(choices=Suit, default=Suit.CLUB)
     medal_type = models.CharField(max_length=10, choices=MedalType.choices, verbose_name='MedalType', default=MedalType.BRONZE)
     place = models.IntegerField(choices=Place.choices, verbose_name='Place', default=Place.THIRD)
