@@ -1,5 +1,7 @@
 from datetime import datetime
+from enum import Enum
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.functions import Concat
 from django.utils import timezone
@@ -47,32 +49,25 @@ class Tags(models.Model):
         return tag
 
 
-class Category(models.Model):
-    class YearInSchool(models.TextChoices):
-        FRESHMAN = "FR", _("Freshman")
-        SOPHOMORE = "SO", _("Sophomore")
-        JUNIOR = "JR", _("Junior")
-        SENIOR = "SR", _("Senior")
-        GRADUATE = "GR", _("Graduate")
+class Choices(models.Model):
+    class Level(models.TextChoices):
+        FRESHMAN = "FR", _("大一新生")
+        SOPHOMORE = "SO", _("大二")
+        JUNIOR = "JR", _("初级")
+        SENIOR = "SR", _("高级")
+        GRADUATE = "GR", _("毕业生")
 
-    class Vehicle(models.TextChoices):
-        CAR = "C"
-        TRUCK = "T"
-        JET_SKI = "J"
+    class Region(models.TextChoices):
+        HB = "华北"
+        HN = "华南"
+        HD = "华东"
+        HZ = "华中"
 
     class Suit(models.IntegerChoices):
         DIAMOND = 1
         SPADE = 2
         HEART = 3
         CLUB = 4
-
-    class MoonLandings(datetime.date, models.Choices):
-        APOLLO_11 = 1969, 7, 20, "Apollo 11 (Eagle)"
-        APOLLO_12 = 1969, 11, 19, "Apollo 12 (Intrepid)"
-        APOLLO_14 = 1971, 2, 5, "Apollo 14 (Antares)"
-        APOLLO_15 = 1971, 7, 30, "Apollo 15 (Falcon)"
-        APOLLO_16 = 1972, 4, 21, "Apollo 16 (Orion)"
-        APOLLO_17 = 1972, 12, 11, "Apollo 17 (Challenger)"
 
     class Answer(models.IntegerChoices):
         NO = 0, _("No")
@@ -81,17 +76,44 @@ class Category(models.Model):
         __empty__ = _("(Unknown)")
 
     class CategoryType(models.TextChoices):
+        """
+        分类类型
+        """
         KP = 'KP', '科普'
         SW = 'SW', '散文'
         XS = 'XS', '小说'
         YX = 'YX', '游戏'
 
-    year_in_school = models.CharField(max_length=50, blank=False, null=False, choices=YearInSchool, db_comment='Category name')
-    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
-    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
-    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
-    category_text = models.CharField(max_length=50, blank=False, null=False, choices=CATEGORY_CHOICES, verbose_name='Category text')
-    created_date = models.DateTimeField(auto_now_add=True, editable=False)
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    ]
+
+    class LanguageChoice(Enum):   # 枚举类的子类 实际上Enum是一个元类 继承自所有类的元类 type
+        DE = "German"
+        EN = "English"
+        CN = "Chinese"
+        ES = "Spanish"
+
+    class Priority(str, models.Choices):
+        LOW = 'L', 'Low'
+        MEDIUM = 'M', 'Medium'
+        HIGH = 'H', 'High'
+
+    MedalType = models.TextChoices("MedalType", "GOLD SILVER BRONZE")
+    Place = models.IntegerChoices("Place", "FIRST SECOND THIRD")
+
+    priority = models.CharField(max_length=5, choices=Priority.choices, default=Priority.LOW)
+    language = models.CharField(max_length=2, choices=[(tag.name, tag.value) for tag in LanguageChoice], default=LanguageChoice.CN)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, default='M')
+    category_type = models.CharField(max_length=2, choices=CategoryType, default=CategoryType.KP)
+    level = models.CharField(max_length=2, choices=Level, db_comment='level', help_text='Level with no default value')
+    region = models.CharField(max_length=2, choices=Region, default=Region.HB, help_text='Region with no default value')
+    answer = models.IntegerField(max_length=2, choices=Answer, verbose_name='answer')
+    suit = models.IntegerField(choices=Suit, default=Suit.CLUB)
+    medal_type = models.CharField(max_length=10, choices=MedalType.choices, verbose_name='MedalType', default=MedalType.BRONZE)
+    place = models.IntegerField(choices=Place.choices, verbose_name='Place', default=Place.THIRD)
 
     __str__ = lambda self: utils.object_to_string(self)
 
@@ -140,14 +162,16 @@ class Comment(models.Model):
 
 class Book(models.Model):
     title = models.CharField("书名", max_length=50, blank=False, null=False)
+    price = models.DecimalField("价格", max_digits=10, decimal_places=2, null=True)
 
     __str__ = lambda self: utils.object_to_string(self)
 
 
 class Author(models.Model):
     name = models.CharField("作者名称", max_length=50, blank=False, null=False)
+    age = models.IntegerField("年龄", default=18)
     books = models.ForeignKey(Book, on_delete=models.CASCADE, verbose_name="the related book")
     tags = models.ManyToManyField(Tags, verbose_name="list of sites", related_name="authors")
-    category = models.OneToOneField(Category, on_delete=models.CASCADE, verbose_name="related place", related_name="author")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="user", related_name="user_info", null=True)
 
     __str__ = lambda self: utils.object_to_string(self)
