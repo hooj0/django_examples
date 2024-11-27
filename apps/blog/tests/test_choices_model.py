@@ -159,3 +159,8 @@ class ChoicesModelTest(BasedTestCase):
         data.level = Choices.Level.SENIOR
         data.medal_type = Choices.MedalType.SILVER
         output_sql(data.save())
+
+
+    def test_choices_query(self):
+        self.test_choices_model()
+        output(Choices.objects.filter(answer=Choices.Answer.YES))
