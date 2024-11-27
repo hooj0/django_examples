@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from django.db import models
 from django.db.models.functions import Concat
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from common.util import utils
 
@@ -21,12 +24,14 @@ class Post(models.Model):
 
     __str__ = lambda self: utils.object_to_string(self)
 
+
 class TagsManager(models.Manager):
     def create_tag(self, tags, post_id):
         print(f"tags: {tags}, post_id: {post_id}")
         tag = self.create(tags=tags, post_id=post_id)
         print(f"tag: {tag}")
         return tag
+
 
 class Tags(models.Model):
     tag_name = models.CharField(max_length=50, blank=False, null=False)
@@ -41,17 +46,39 @@ class Tags(models.Model):
         print(f"tag: {tag}")
         return tag
 
-class Category(models.Model):
-    CATEGORY_CHOICES = [
-        ("KP", "科普"),
-        ("SW", "散文"),
-        ("XS", "小说"),
-        ("YX", "游戏"),
-    ]
 
-    @staticmethod
-    def get_currencies():
-        return {i: i for i in Category.CATEGORY_CHOICES}
+class Category(models.Model):
+    class YearInSchool(models.TextChoices):
+        FRESHMAN = "FR", _("Freshman")
+        SOPHOMORE = "SO", _("Sophomore")
+        JUNIOR = "JR", _("Junior")
+        SENIOR = "SR", _("Senior")
+        GRADUATE = "GR", _("Graduate")
+
+    class Vehicle(models.TextChoices):
+        CAR = "C"
+        TRUCK = "T"
+        JET_SKI = "J"
+
+    class Suit(models.IntegerChoices):
+        DIAMOND = 1
+        SPADE = 2
+        HEART = 3
+        CLUB = 4
+
+    class MoonLandings(datetime.date, models.Choices):
+        APOLLO_11 = 1969, 7, 20, "Apollo 11 (Eagle)"
+        APOLLO_12 = 1969, 11, 19, "Apollo 12 (Intrepid)"
+        APOLLO_14 = 1971, 2, 5, "Apollo 14 (Antares)"
+        APOLLO_15 = 1971, 7, 30, "Apollo 15 (Falcon)"
+        APOLLO_16 = 1972, 4, 21, "Apollo 16 (Orion)"
+        APOLLO_17 = 1972, 12, 11, "Apollo 17 (Challenger)"
+
+    class Answer(models.IntegerChoices):
+        NO = 0, _("No")
+        YES = 1, _("Yes")
+
+        __empty__ = _("(Unknown)")
 
     class CategoryType(models.TextChoices):
         KP = 'KP', '科普'
@@ -59,16 +86,12 @@ class Category(models.Model):
         XS = 'XS', '小说'
         YX = 'YX', '游戏'
 
-    category_name = models.CharField(max_length=50, blank=False, null=False, choices=CATEGORY_CHOICES, db_comment='Category name')
-    category_type = models.CharField(max_length=50, blank=False, null=False, choices=get_currencies, default=CategoryType.KP)
+    year_in_school = models.CharField(max_length=50, blank=False, null=False, choices=YearInSchool, db_comment='Category name')
+    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
+    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
+    category_type = models.CharField(max_length=50, blank=False, null=False, choices=CategoryType, default=CategoryType.KP)
     category_text = models.CharField(max_length=50, blank=False, null=False, choices=CATEGORY_CHOICES, verbose_name='Category text')
     created_date = models.DateTimeField(auto_now_add=True, editable=False)
-
-    def is_upperclass(self):
-        return self.category_text in {
-            self.CategoryType.KP,
-            self.CategoryType.SW,
-        }
 
     __str__ = lambda self: utils.object_to_string(self)
 
@@ -114,10 +137,12 @@ class Comment(models.Model):
 
     __str__ = lambda self: utils.object_to_string(self)
 
+
 class Book(models.Model):
     title = models.CharField("书名", max_length=50, blank=False, null=False)
 
     __str__ = lambda self: utils.object_to_string(self)
+
 
 class Author(models.Model):
     name = models.CharField("作者名称", max_length=50, blank=False, null=False)
