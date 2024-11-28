@@ -4,8 +4,8 @@ from enum import Enum
 from django.test import TestCase
 
 from apps.blog.models import Choices
-from django.db import models
-from apps.blog.tests.tests import BasedTestCase, output, output_sql
+from django.db import models, reset_queries
+from apps.blog.tests.tests import BasedTestCase, output, output_sql, sql_decorator
 
 
 class ChoicesModelTest(BasedTestCase):
@@ -157,6 +157,7 @@ class ChoicesModelTest(BasedTestCase):
 
         data.answer = Choices.Answer.YES
         data.language = Choices.LanguageChoice.EN
+        # data.language = Choices.LanguageChoice.EN.name
         data.gender = Choices.GENDER_CHOICES[1]
         data.category_type = Choices.CategoryType.KP
         data.level = Choices.Level.SENIOR
@@ -164,6 +165,24 @@ class ChoicesModelTest(BasedTestCase):
         output_sql(data.save())
 
 
+    @sql_decorator
     def test_choices_query(self):
         self.test_choices_model()
-        output(Choices.objects.filter(answer=Choices.Answer.YES))
+
+        data = Choices.objects.filter(answer=Choices.Answer.YES).first()
+
+        print(data.answer)   # 1
+        print(data.priority) # H
+        print(data.language) # LanguageChoice.EN
+        print(data.gender)   # ('F', 'Female')
+
+        print(data.answer == Choices.Answer.YES)        # True
+        print(data.priority == Choices.Priority.HIGH)   # True
+
+        print(Choices.LanguageChoice.EN.name)   # EN
+        print(Choices.LanguageChoice.EN.value)  # English
+        print(Choices.LanguageChoice.EN.__str__()) # LanguageChoice.EN
+        print(data.language == Choices.LanguageChoice.EN) # True
+        print(data.language == Choices.LanguageChoice.EN.name) # False
+        print(data.language == Choices.LanguageChoice.EN.__str__()) # True
+        print(data.gender == Choices.GENDER_CHOICES[1]) # False
