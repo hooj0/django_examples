@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -18,7 +19,7 @@ class Migration(migrations.Migration):
             name='Choices',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('language', models.CharField(choices=[('DE', 'German'), ('EN', 'English'), ('CN', 'Chinese'), ('ES', 'Spanish')], default=apps.blog.models.Choices.LanguageChoice['CN'], max_length=2)),
+                ('language', models.CharField(choices=[('DE', 'German'), ('EN', 'English'), ('CN', 'Chinese'), ('ES', 'Spanish')], default=apps.blog.models.model_choices.Choices.LanguageChoice['CN'], max_length=2)),
                 ('gender', models.CharField(choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')], default='M', max_length=1)),
                 ('category_type', models.CharField(choices=[('KP', '科普'), ('SW', '散文'), ('XS', '小说'), ('YX', '游戏')], default='KP', max_length=2)),
                 ('level', models.CharField(choices=[('FR', '大一新生'), ('SO', '大二'), ('JR', '初级'), ('SR', '高级'), ('GR', '毕业生')], db_comment='level', help_text='Level with no default value', max_length=2)),
