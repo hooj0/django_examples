@@ -37,13 +37,16 @@ def output_sql(self, *args):
     for query in connection.queries:
         print(query['time'] + " -> " + query['sql'])
 
-    print("")
+    if connection.queries:
+        print("")
     reset_queries()
+    return self
 
 def output(query_set: QuerySet):
     print(query_set)
     print(query_set.query)
     print("")
+    return query_set
 
 
 class BasedTestCase(TestCase):
