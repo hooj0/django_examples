@@ -1,3 +1,6 @@
+from django.db.models.base import ModelState
+
+
 def object_to_string(obj, max_length=15):
     """
     将对象转换为字符串
@@ -14,8 +17,11 @@ def object_to_string(obj, max_length=15):
             masked_value = value[:10] + '*' * (min(len(value), max_length) - 10)
         elif isinstance(value, (int, float)):
             masked_value = str(value)
+        elif isinstance(value, ModelState):
+            masked_value = value.__dict__
         elif isinstance(value, object):
-            masked_value = "未知"
+            # print(f"{value} -> {type(value)}")
+            masked_value = f"{value}"
         else:
             masked_value = value
 
