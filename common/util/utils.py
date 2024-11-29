@@ -18,7 +18,8 @@ def object_to_string(obj, max_length=15):
         elif isinstance(value, (int, float)):
             masked_value = str(value)
         elif isinstance(value, ModelState):
-            masked_value = value.__dict__
+            # masked_value = value.__dict__
+            masked_value = "unknown"
         elif isinstance(value, object):
             # print(f"{value} -> {type(value)}")
             masked_value = f"{value}"
