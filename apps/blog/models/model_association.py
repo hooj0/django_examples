@@ -13,6 +13,10 @@ class Studio(models.Model):
 
     __str__ = lambda self: utils.object_to_string(self)
 
+
+"""
+    一对一关联
+"""
 class Author(models.Model):
     name = models.CharField("作者名称", max_length=50, blank=False, null=False)
     age = models.IntegerField("年龄", default=18)
@@ -27,6 +31,9 @@ class Author(models.Model):
         return Author(name=f"Mock Author {faker.user_name()}", age=faker.pyint(min_value=18, max_value=60))
 
 
+"""
+    多对一关联
+"""
 class Book(models.Model):
     title = models.CharField("书名", max_length=50, blank=False, null=False)
     price = models.DecimalField("价格", max_digits=10, decimal_places=2, null=True)
@@ -40,3 +47,10 @@ class Book(models.Model):
         return Book(title=f"Mock Book {faker.name()}", price=faker.pydecimal(left_digits=3, right_digits=2))
 
 
+"""
+    多对多关联
+"""
+class Publisher(models.Model):
+    publisher_name = models.CharField(max_length=50, blank=False, null=False)
+
+    __str__ = lambda self: utils.object_to_string(self)
