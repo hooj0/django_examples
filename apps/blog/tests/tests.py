@@ -12,7 +12,8 @@ def sql_decorator(func):
         result = func(*args, **kwargs)
 
         for query in connection.queries:
-            print(query['time'] + " -> " + query['sql'])
+            # print(query['time'] + " -> " + query['sql'])
+            print(query['sql'])
 
         print("")
         reset_queries()
@@ -26,7 +27,8 @@ class SqlContextManager:
 
     def __exit__(self, exc_type, exc_value, traceback):
         for query in connection.queries:
-            print(query['time'] + " -> " + query['sql'])
+            # print(query['time'] + " -> " + query['sql'])
+            print(query['sql'])
 
         print("")
         reset_queries()
@@ -35,7 +37,8 @@ def output_sql(self, *args):
     print(self, *args)
 
     for query in connection.queries:
-        print(query['time'] + " -> " + query['sql'])
+        # print(query['time'] + " -> " + query['sql'])
+        print(query['sql'])
 
     if connection.queries:
         print("")

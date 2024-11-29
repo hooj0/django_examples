@@ -577,7 +577,7 @@ python manage.py squashmigrations app_name start_migration end_migration
 + [文档内容索引](https://docs.djangoproject.com/zh-hans/5.1/contents/)
 + [编写并运行测试](https://docs.djangoproject.com/zh-hans/5.1/topics/testing/overview/)
 + [模型](https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/#relationships)
-  + [模型相关示例](https://docs.djangoproject.com/zh-hans/5.1/ref/models/)
+  + [模型参考示例](https://docs.djangoproject.com/zh-hans/5.1/ref/models/)
   + [模型字段参考](https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#top)
   + [QuerySet API 参考](https://docs.djangoproject.com/zh-hans/5.1/ref/models/querysets/#top)
   + [执行原生 SQL 查询](https://docs.djangoproject.com/zh-hans/5.1/topics/db/sql/)
