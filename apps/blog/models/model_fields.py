@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models.functions import Concat
 from django.utils import timezone
 
-from apps.blog.models.model_post_tags import Post
+from apps.blog.models.model_crud import Post
 from common.util import utils
 
 
