@@ -1,9 +1,9 @@
-from unittest import TestCase
 from django.contrib.auth.models import User
 from django.db import reset_queries
 
 from apps.blog.models import Studio, Author, faker, Book, Publisher
 from apps.blog.tests.tests import BasedTestCase, sql_decorator, output_sql
+
 
 class PublisherModelTest(BasedTestCase):
 

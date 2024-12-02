@@ -111,11 +111,17 @@ class Employee(models.Model):
     name = models.CharField(max_length=100)
     """
     # 自关联的 ManyToManyField
+    # 注意: 默认情况下, 中间表的名字是 'appname_employee_teams'
+        # (这里 'appname' 是你的应用名, 'employee' 是模型的小写名字, 'teams' 是 ManyToManyField 的名字),
+        # 并且包含两个字段: 'from_employee_id' 和 'to_employee_id'.
+        https://lxblog.com/qianwen/share?shareId=637bd1a2-4767-465e-a673-731a0e64a69d
+        
     # 生成：
         id ：关系的主键。
         from_<model>_id ：指向模型的实例（即源实例）的 id
         to_<model>_id ：关系所指向的实例（即目标模型实例）的 id
     # symmetrical=False 关系不对称，默认为对称
+        将 A 添加为 B 的子集，不会自动将 B 添加为 A 子集
     # db_table 要创建的用于存储多对多数据的中间表的名称，不设置将默认生成
     # db_constraint 控制外键约束，默认 True 需要约束（同时传递 db_constraint 和 through 会引发错误）
     # swappable=False  确保多对多这个字段关联的模型‘settings.AUTH_USER_MODEL’不能被替换
@@ -123,3 +129,5 @@ class Employee(models.Model):
         AUTH_USER_MODEL = 'myapp.CustomUser'
     """
     teams = models.ManyToManyField('self', db_table='employee_teams')
+
+    __str__ = lambda self: utils.object_to_string(self)
