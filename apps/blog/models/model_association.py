@@ -58,6 +58,14 @@ class Book(models.Model):
     """
     author = models.ForeignKey(Author, on_delete=models.CASCADE, verbose_name="the related book", null=True, related_name="books", related_query_name="book")
 
+    class EntryManager(models.Manager):
+
+        def is_expensive(self):
+            return self.first().price > 30
+
+    # 自定义管理器
+    entries = EntryManager()
+    objects = models.Manager()  # Default Manager
     __str__ = lambda self: utils.object_to_string(self)
 
     @staticmethod
