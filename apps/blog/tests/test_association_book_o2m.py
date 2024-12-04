@@ -138,6 +138,7 @@ class BookModelTest(BasedTestCase):
         print(book)
         output_sql(book.author)
 
+        # 提前递归地预加载所有一对多关系的缓存
         output_sql(Book.objects.select_related().all())
         output_sql(Book.objects.select_related().get(pk=1))
         output_sql(Book.objects.select_related("author"))
@@ -148,7 +149,19 @@ class BookModelTest(BasedTestCase):
 
         print("-------------------反向查询--------------------")
         print(Author.objects.filter(book__title__contains='Mock Book'))
-        print(author.books.all())
+
+        # related_name="books"
+        output_sql(author.books.all())
+        # AttributeError: 'Author' object has no attribute 'book_set'
+        # output_sql(author.book_set.all())
+
+        output_sql(author.books.count())
+        output_sql(author.books.filter(title__contains='Mock Book'))
+        output_sql(author.books.filter(price__lt=5))
+
+        # 自定义 管理器
+        # author.books("entries").all()
+        # author.books("entries").is_expensive()
 
     def test_m2o_crud(self):
         # 创建
