@@ -46,7 +46,16 @@ class Book(models.Model):
     models.DecimalField(..., max_digits=5, decimal_places=2)
     """
     price = models.DecimalField("价格", max_digits=10, decimal_places=2, null=True)
-    # related_name 参数用于指定反向查询时使用的字段名，默认为模型类名小写加_set
+    """
+    多对一：ForeignKey
+    
+        related_name 参数用于指定反向查询时使用的字段名(用于从相关对象到这个对象的关系的名称)，默认为关联模型类名小写加_set
+            不创建反向关系，将 related_name 设置为 '+' 或者以 '+' 结束
+        related_query_name 目标模型中反向过滤器(filter/get中的属性名称)的名称(默认为 related_name 或 default_related_name 的值)
+        to_field 关联对象的字段。默认情况下，使用相关对象的主键。如果引用不同的字段，这个字段必须有 unique=True
+        db_constraint 控制是否应该在数据库中为外键约束。默认值是 True
+            参考：https://lxblog.com/qianwen/share?shareId=c2a5c483-00a5-4ebd-82b5-07ef019b6531
+    """
     author = models.ForeignKey(Author, on_delete=models.CASCADE, verbose_name="the related book", null=True, related_name="books", related_query_name="book")
 
     __str__ = lambda self: utils.object_to_string(self)
@@ -116,7 +125,7 @@ class Employee(models.Model):
         # 并且包含两个字段: 'from_employee_id' 和 'to_employee_id'.
         https://lxblog.com/qianwen/share?shareId=637bd1a2-4767-465e-a673-731a0e64a69d
         
-    # 生成：
+    # 中间表生成：
         id ：关系的主键。
         from_<model>_id ：指向模型的实例（即源实例）的 id
         to_<model>_id ：关系所指向的实例（即目标模型实例）的 id
