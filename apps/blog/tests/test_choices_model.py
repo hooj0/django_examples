@@ -21,6 +21,10 @@ class ChoicesModelTest(BasedTestCase):
         print(Choices.Level.labels)  # ['大一新生', '大二', '初级', '高级', '毕业生']
 
         print(Choices.Level.FRESHMAN)   # <Choices.Level: FR>
+        print(Choices.Level.FRESHMAN.__dict__)   # {'_value_': 'FR', '_name_': 'FRESHMAN', '__objclass__': <enum 'Level'>, '_sort_order_': 0, '_label_': '大一新生'}
+        print(Choices.Level.__dict__)
+        print(Choices.Level.__members__)   # {'FRESHMAN': Choices.Level.FRESHMAN, 'SOPHOMORE': Choices.Level.SOPHOMORE, 'JUNIOR': Choices.Level.JUNIOR, 'SENIOR': Choices.Level.SENIOR, 'GRADUATE': Choices.Level.GRADUATE}
+        print(dict(Choices.Level.choices)) # {'FR': '大一新生', 'SO': '大二', 'JR': '初级', 'SR': '高级', 'GR': '毕业生'}
         print(Choices.Level.FRESHMAN.value) # FR
         print(Choices.Level.FRESHMAN.label) # 大一新生
         print(Choices.Level.FRESHMAN.name)  # FRESHMAN
@@ -57,6 +61,7 @@ class ChoicesModelTest(BasedTestCase):
 
         print(Type)
         print(Type.RED)
+        print(Type.RED.__dict__) # {'_value_': 1, 'desc': 'Red', 'bool': True, '_name_': 'RED', '__objclass__': <enum 'Type'>, '_sort_order_': 0}
         print(Type.RED.name)
         print(Type.RED.value)
         print(Type.RED.desc)
@@ -123,6 +128,7 @@ class ChoicesModelTest(BasedTestCase):
         print(Priority.values)  # [('L',), ('M',), ('H',)]
         print(Priority.labels)  # ['Low', 'Medium', 'High']
         print(Priority['LOW'])
+        print(vars(Priority['LOW']))
         print("------------------------------------")
 
         class Priority2(models.Choices):
@@ -164,6 +170,8 @@ class ChoicesModelTest(BasedTestCase):
         data.medal_type = Choices.MedalType.SILVER
         output_sql(data.save())
 
+        output(Choices.objects.all())
+
 
     @sql_decorator
     def test_choices_query(self):
@@ -175,6 +183,10 @@ class ChoicesModelTest(BasedTestCase):
         print(data.priority) # H
         print(data.language) # LanguageChoice.EN
         print(data.gender)   # ('F', 'Female')
+        print(data.get_answer_display()) # Yes
+        print(data.get_fruit_display())  # 苹果
+        print(data.get_suit_display())      # Heart
+        print(data.get_language_display())  # LanguageChoice.EN
 
         print(data.answer == Choices.Answer.YES)        # True
         print(data.priority == Choices.Priority.HIGH)   # True

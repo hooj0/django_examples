@@ -32,14 +32,19 @@ class Choices(models.Model):
 
         __empty__ = _("(Unknown)")
 
+    class Fruit(models.IntegerChoices):
+        APPLE = 1, "苹果"
+        PEACH = 2, "桃子"
+        ORANGE = 3, "橘子"
+
     class CategoryType(models.TextChoices):
         """
         分类类型
         """
-        KP = 'KP', '科普'
-        SW = 'SW', '散文'
-        XS = 'XS', '小说'
-        YX = 'YX', '游戏'
+        KP = 'K', '科普'
+        SW = 'S', '散文'
+        XS = 'X', '小说'
+        YX = 'Y', '游戏'
 
     GENDER_CHOICES = [
         ('M', 'Male'),
@@ -72,6 +77,7 @@ class Choices(models.Model):
     region = models.CharField(max_length=2, choices=Region, default=Region.HB, help_text='Region with no default value')
     answer = models.IntegerField(choices=Answer, verbose_name='answer', default=Answer.NO)
     suit = models.IntegerField(choices=Suit, default=Suit.CLUB)
+    fruit = models.IntegerField(choices=Fruit, default=Fruit.APPLE)
     medal_type = models.CharField(max_length=10, choices=MedalType.choices, verbose_name='MedalType', default=MedalType.BRONZE)
     place = models.IntegerField(choices=Place.choices, verbose_name='Place', default=Place.THIRD)
 
