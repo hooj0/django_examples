@@ -34,6 +34,10 @@ class BookModelTest(BasedTestCase):
         # SELECT "blog_book"."id", "blog_book"."title", "blog_book"."price", "blog_book"."author_id" FROM "blog_book" WHERE "blog_book"."author_id" = 1
         print(book.author.books.all())
 
+        dict_author = Author.mock_data().__dict__
+        dict_author.pop("_state")
+        print(Author.objects.create(**dict_author))
+
     @sql_decorator
     def test_create_author_books(self):
         author = Author.mock_data()
