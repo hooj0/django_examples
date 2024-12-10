@@ -1,6 +1,7 @@
 import datetime
 from enum import Enum
 
+from django.db.models.enums import TextChoices
 from django.test import TestCase
 
 from apps.blog.models import Choices
@@ -30,6 +31,7 @@ class ChoicesModelTest(BasedTestCase):
         print(Choices.Level.FRESHMAN.name)  # FRESHMAN
 
         print(Choices.Level['FRESHMAN'] == Choices.Level.FRESHMAN)
+        print(dict(Choices.Level.choices))
 
         for value, label in Choices.Level.choices:
             print(value)
@@ -198,3 +200,56 @@ class ChoicesModelTest(BasedTestCase):
         print(data.language == Choices.LanguageChoice.EN.name) # False
         print(data.language == Choices.LanguageChoice.EN.__str__()) # True
         print(data.gender == Choices.GENDER_CHOICES[1]) # False
+
+    def test_choices_biz(self):
+
+        class BaseTextChoices(models.TextChoices):
+            @classmethod
+            def value_of(cls, value):
+                return next(item for item in cls if item.value == value)
+
+            @classmethod
+            def label_of(cls, label):
+                return next(item for item in cls if item.label == label)
+
+            @classmethod
+            def name_of(cls, name):
+                try:
+                    return cls[name]
+                except:
+                    return None
+
+            def get_dict(self):
+                return {'name': self.name, 'label': self.label, 'value': self.value}
+
+            @classmethod
+            def get_choices(cls):
+                return [(item.name, item.label) for item in cls]
+
+            @classmethod
+            def get_choices_dict(cls):
+                return {item.name: item.label for item in cls}
+
+            @classmethod
+            def get_choices_list(cls):
+                return list(map(lambda item: item.get_dict(), cls))
+
+            def __str__(self):
+                return f'{self.name} {self.value} - {self.label}'
+
+        class Status(BaseTextChoices):
+            ACTIVE = 'A', '活动'
+            INACTIVE = 'I', '未激活'
+            DELETED = 'D', '删除'
+
+        print(Status['ACTIVE'])          # ACTIVE A - 活动
+        print(Status.name_of('ACTIVE'))  # ACTIVE A - 活动
+        print(Status.name_of('ACTIVE2')) # None
+        print(Status.value_of('D'))      # DELETED D - 删除
+        print(Status.label_of('未激活'))  # INACTIVE I - 未激活
+        print(Status['ACTIVE'].__dict__)    # {'_value_': 'A', '_name_': 'ACTIVE', '__objclass__': <enum 'Status'>, '_sort_order_': 0, '_label_': '活动'}
+        print(Status['ACTIVE'].get_dict())  # {'name': 'ACTIVE', 'label': '活动', 'value': 'A'}
+        print(Status.get_choices())         # [('ACTIVE', '活动'), ('INACTIVE', '未激活'), ('DELETED', '删除')]
+        print(Status['ACTIVE'].get_choices_dict())  # {'ACTIVE': '活动', 'INACTIVE': '未激活', 'DELETED': '删除'}
+        print(Status.get_choices_list())            # [{'name': 'ACTIVE', 'label': '活动', 'value': 'A'}, {'name': 'INACTIVE', 'label': '未激活', 'value': 'I'}, {'name': 'DELETED', 'label': '删除', 'value': 'D'}]
+        print(Status.choices)                       # [('A', '活动'), ('I', '未激活'), ('D', '删除')]
