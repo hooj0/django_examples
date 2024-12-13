@@ -98,13 +98,15 @@ class Publisher(models.Model):
 
 
 class Reader(models.Model):
-    reader_name = models.CharField(max_length=50, blank=False, null=False)
     """
     显示模式，中间表模式
     # to = 字符串，指定关联的模型类，也可以指定关联的模型类名（当依赖的模型在当前模型下方，编译不会出错）
+        - 懒依赖关系，可以跨文件依赖/可以相互依赖/可以自依赖
+        - https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#lazy-relationships
     # through 显示设置/自定义中间模型指连接两个多对多关联模型类的中间表
     # through_fields 只有自定义的中间模型时才会使用，当中间模型外键存在相同类型时，需要决定使用中间模型的哪些字段来自动建立多对多的关系
     """
+    reader_name = models.CharField(max_length=50, blank=False, null=False)
     books = models.ManyToManyField('Book', through='Club', through_fields=('reader', 'book'))
 
     __str__ = lambda self: utils.object_to_string(self)

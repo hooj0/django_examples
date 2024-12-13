@@ -28,11 +28,14 @@ class BookModelTest(BasedTestCase):
         print(book.author)
         # Author 默认 外键字段名是 author_id
         print(book.author_id)
+        print(book.author.id) # 1
+        print(book.author.pk)
         # books 名称 和 Book.author字段上的外键 related_name="books" 关联
         print(book.author.books)    # blog.Book.None 表明有多个book
 
         # SELECT "blog_book"."id", "blog_book"."title", "blog_book"."price", "blog_book"."author_id" FROM "blog_book" WHERE "blog_book"."author_id" = 1
         print(book.author.books.all())
+        print(book.author.books.count())
 
         dict_author = Author.mock_data().__dict__
         dict_author.pop("_state")
@@ -142,6 +145,17 @@ class BookModelTest(BasedTestCase):
         print(book)
         output_sql(book.author)
 
+        output_sql(author.books.filter(title__contains='Mock Book'))
+        output_sql(author.books.filter(author__name__contains='Mock Author'))
+        output_sql(Book.objects.filter(author__name__contains='Mock Author'))
+
+        output_sql(Book.objects.filter(author=1))
+        output_sql(Book.objects.filter(author=author2))
+        output_sql(Book.objects.filter(author_id=1))
+        output_sql(Book.objects.filter(author__id=1))
+        output_sql(Book.objects.filter(author__pk=1))
+        output_sql(Book.objects.filter(author__in=Author.objects.filter(name__contains='Mock Author')))
+
         # 提前递归地预加载所有一对多关系的缓存
         output_sql(Book.objects.select_related().all())
         output_sql(Book.objects.select_related().get(pk=1))
@@ -153,6 +167,22 @@ class BookModelTest(BasedTestCase):
 
         print("-------------------反向查询--------------------")
         print(Author.objects.filter(book__title__contains='Mock Book'))
+        print(Author.objects.filter(book=1))
+        print(Author.objects.filter(book=book))
+        print(Author.objects.filter(book__pk=1))
+        print(Author.objects.filter(book__id=1))
+
+        print(Author.objects.filter(book__title__contains='Mock Book'))
+        print(Author.objects.filter(book__title__contains='Mock Book').count())
+        print(Author.objects.filter(book__title__contains='Mock Book').distinct())
+        print(Author.objects.filter(book__title__contains='Mock Book').distinct().count())
+
+        # 从 book 到 author
+        # SELECT "blog_author"."id", "blog_author"."name", "blog_author"."age", "blog_author"."user_id", "blog_author"."studio_id" FROM "blog_author"
+        # INNER JOIN "blog_book" ON ("blog_author"."id" = "blog_book"."author_id")
+        # INNER JOIN "blog_author" T3 ON ("blog_book"."author_id" = T3."id")
+        # WHERE T3."name" LIKE '%Mock%' ESCAPE '\' LIMIT 21
+        output_sql(Author.objects.filter(book__author__name__contains='Mock'))
 
         # related_name="books"
         output_sql(author.books.all())

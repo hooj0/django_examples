@@ -23,6 +23,27 @@ class AuthorModelTest(BasedTestCase):
         author = Author.objects.create(name=faker.user_name(), age=faker.pyint(), user=self.user, studio=self.studio)
         print(author)
 
+        # 反向关联
+        studio = Studio.objects.create(name='studio2', address='深圳')
+        try:
+            print(studio.author)
+        except:
+            print("studio2 has no author, RelatedObjectDoesNotExist")
+
+        studio.author = author
+        studio.save()
+        print(studio.author)
+
+        # 正向关联
+        author.studio = studio
+        author.save()
+        print(author.studio)
+        print(studio.author)
+
+    @sql_decorator
+    def test_author_query(self):
+        author = Author.objects.create(name=faker.user_name(), age=faker.pyint(), user=self.user, studio=self.studio)
+
         # 反向查询，一对多
         # book_set 名称 和 book的外键 related_name="books" 关联
         # SELECT "blog_book"."id", "blog_book"."title", "blog_book"."price", "blog_book"."author_id" FROM "blog_book" WHERE "blog_book"."author_id" = 1
@@ -37,6 +58,14 @@ class AuthorModelTest(BasedTestCase):
         # Author 和 User 一对一，related_name="默认 当前模型名称小写" 方向设置属性
         print(author.studio.author == author) # True
 
+        user2 = User.objects.create(username='tomas', email='tomas@test.com')
+        author2 = Author.objects.create(name=faker.user_name(), age=faker.pyint(), user=user2)
+        print(author2)
+        print(hasattr(author, 'studio'))
+        print(hasattr(author2, 'studio'))
+        print(author.studio)
+        print(author2.studio)
+
     def test_query_user_reverse(self):
         # 反向查询 一对一
         user = output_sql(User.objects.last())
@@ -49,6 +78,10 @@ class AuthorModelTest(BasedTestCase):
         studio = output_sql(Studio.objects.get(name='tom studio'))
         # Author 和 Studio 一对一，Author 反向默认设置 related_name="Author默认小写"
         output_sql(studio.author)
+
+        studio2 = Studio.objects.create(name='studio2', address='深圳')
+        print(hasattr(studio2, 'author'))   # False 反向属性不存在，如果没有对象将其关联；相反，正向有申明属性，不存在关联的情况下为None
+        print(hasattr(studio, 'author'))    # True
 
     def test_query_author(self):
         author = output_sql(Author.objects.first())
@@ -63,3 +96,13 @@ class AuthorModelTest(BasedTestCase):
         output_sql(author.user.author_of)
         output_sql(author.user)
         output_sql(author.user.author_of == author) # True
+
+        output_sql(Author.objects.filter(pk=1))
+        output_sql(Author.objects.filter(id=1))
+        output_sql(Author.objects.filter(studio=1))
+        output_sql(Author.objects.filter(studio__id=1))
+        output_sql(Author.objects.filter(studio__pk=1))
+        output_sql(Author.objects.filter(studio__name__contains='studio'))
+        output_sql(Author.objects.filter(studio__author=1))
+        # 关联查询：Author 和 Studio 一对一
+        output_sql(Author.objects.filter(studio__author__name__contains='tom'))
