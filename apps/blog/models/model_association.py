@@ -156,3 +156,28 @@ class Employee(models.Model):
     teams = models.ManyToManyField('self', db_table='employee_teams')
 
     __str__ = lambda self: utils.object_to_string(self)
+
+
+class Topping(models.Model):
+    name = models.CharField(max_length=30)
+
+    __str__ = lambda self: self.name
+
+class Pizza(models.Model):
+    name = models.CharField(max_length=50)
+    toppings = models.ManyToManyField(Topping)
+
+    def __str__(self):
+        return "%s (%s)" % (
+            self.name,
+            ", ".join(topping.name for topping in self.toppings.all()),
+        )
+
+class Restaurant(models.Model):
+    name = models.CharField(max_length=50, default="")
+    pizzas = models.ManyToManyField(Pizza, related_name="restaurants")
+    best_pizza = models.ForeignKey(
+        Pizza, related_name="championed_by", on_delete=models.CASCADE
+    )
+
+    __str__ = lambda self: self.name

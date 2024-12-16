@@ -1,13 +1,13 @@
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db import reset_queries
-from django.db.models import F, ExpressionWrapper, DecimalField
+from django.db.models import F, ExpressionWrapper, DecimalField, Prefetch
 from django.db.models.aggregates import Count, Avg, Sum
 from django.db.models.functions import Coalesce, Lower
 from django.db.models.query import EmptyQuerySet
 from django.utils import timezone
 
-from apps.blog.models import Tags, Post, Book, Author, faker, Publisher
+from apps.blog.models import Tags, Post, Book, Author, faker, Publisher, Topping, Pizza, Restaurant
 from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, sql_decorator, output
 from common.util.utils import object_to_string
 
@@ -27,6 +27,7 @@ class QuerySetTest(BasedTestCase):
         print("posts: ", Post.objects.all())
 
         self.query_set_prepare_data()
+        self.prefetch_related_prepare_data()
 
     def test_query_introduce(self):
         print("----------------iterator-----------------")
@@ -409,6 +410,7 @@ class QuerySetTest(BasedTestCase):
             然而，为了避免因跨越“many”关系进行连接而产生更大的结果集，select_related 仅限于 o2o和 m2o
         prefetch_related 支持多对多、对一和 GenericRelation 对象，外键和一对一关系，
         还支持 GenericForeignKey 的预取，但是必须在 GenericPrefetch 的 querysets 参数中提供每个 ContentType 的查询集
+        prefetch_related 使用 IN SQL语句进行关联查询
         """
         print("----------------prefetch_related--------------------")
         # 多对一：触发2条SQL
@@ -426,6 +428,56 @@ class QuerySetTest(BasedTestCase):
         # 可以多表关联查询
         output_sql(Publisher.objects.prefetch_related("books__reader_set"))
         output_sql(Publisher.objects.prefetch_related("books__author"))
+
+        # 查询配料，触发3条SQL
+        output_sql(Restaurant.objects.prefetch_related("pizzas__toppings"))
+        # 查询最佳披萨，触发3条SQL
+        output_sql(Restaurant.objects.prefetch_related("best_pizza__toppings"))
+
+        # 触发2条SQL
+        # output_sql(Publisher.objects.select_related("外键属性").prefetch_related("外键对象关联的多对多对象"))
+        output_sql(Restaurant.objects.select_related("best_pizza").prefetch_related("best_pizza__toppings"))
+
+        # 清空
+        qs = Publisher.objects.prefetch_related("books__author")
+        qs.prefetch_related(None)
+
+        # 自定义结果集
+        output_sql(Restaurant.objects.prefetch_related(Prefetch("pizzas__toppings")))
+        # 排序
+        output_sql(Restaurant.objects.prefetch_related(Prefetch("pizzas__toppings", queryset=Topping.objects.order_by("name"))))
+        # 通过披萨查询餐厅，并查询最好的披萨（通过多对多一端查询另一个多的一段，并查询子集数据）
+        output_sql(Pizza.objects.prefetch_related(Prefetch("restaurants", queryset=Restaurant.objects.select_related("best_pizza"))))
+
+        # 将查出的结果集用 直接存储在一个列表
+        vegetarian_pizzas = Pizza.objects.filter(name="水果披萨")
+        qs = output_sql(Restaurant.objects.prefetch_related(Prefetch("pizzas", to_attr="a"), Prefetch("pizzas", queryset=vegetarian_pizzas, to_attr="b")))
+        print(qs[0].a)  # [<Pizza: 辣肠披萨 (咸蛋黄, 芝士, 火腿)>, <Pizza: 榴莲披萨 (鸡肉, 榴莲, 菠萝)>, <Pizza: 水果披萨 (咸蛋黄, 鸡肉, 榴莲, 菠萝)>, <Pizza: 暗黑披萨 (咸蛋黄, 菠萝)>]
+        print(qs[0].b) # [<Pizza: 水果披萨 (咸蛋黄, 鸡肉, 榴莲, 菠萝)>]
+
+        # 对查询结果集进行二次查询
+        qs = output_sql(Restaurant.objects.prefetch_related(Prefetch("pizzas", queryset=vegetarian_pizzas, to_attr="b"), "b__toppings"))
+        print(qs[0].b)  # [<Pizza: 水果披萨 (咸蛋黄, 鸡肉, 榴莲, 菠萝)>]
+        print(qs[0])    # 高级披萨餐厅
+
+        # 预取
+        only_name = Pizza.objects.only("name")
+        restaurants = Restaurant.objects.prefetch_related(Prefetch("best_pizza", queryset=only_name))
+        print(restaurants) # <QuerySet [<Restaurant: 高级披萨餐厅>, <Restaurant: 水果萨餐厅>, <Restaurant: 素食披萨餐厅>, <Restaurant: 暗黑萨餐厅>]>
+
+        output_sql(Restaurant.objects.prefetch_related("pizzas__toppings", "pizzas"))
+
+        # 数据库
+        # output_sql(Restaurant.objects.prefetch_related("pizzas__toppings").using("replica"))
+        #
+        # # Inner将使用“副本”数据库；外部将使用“默认”数据库
+        # Restaurant.objects.prefetch_related(
+        #     Prefetch("pizzas__toppings", queryset=Topping.objects.using("replica")),
+        # )
+        # # 内部将使用“副本”数据库；外层将使用“冷藏”数据库
+        # Restaurant.objects.prefetch_related(
+        #     Prefetch("pizzas__toppings", queryset=Topping.objects.using("replica")),
+        # ).using("cold-storage")
 
 
 
@@ -525,3 +577,35 @@ class QuerySetTest(BasedTestCase):
         publisher = Publisher.objects.create(publisher_name=faker.company())
         publisher.books.add(4, 5, 6, 8, 9)
         reset_queries()
+
+    def prefetch_related_prepare_data(self):
+        topping1 = Topping.objects.create(name="咸蛋黄")
+        topping2 = Topping.objects.create(name="芝士")
+        topping3 = Topping.objects.create(name="火腿")
+        topping4 = Topping.objects.create(name="鸡肉")
+        topping5 = Topping.objects.create(name="榴莲")
+        topping6 = Topping.objects.create(name="菠萝")
+
+        p1 = Pizza.objects.create(name="辣肠披萨")
+        p1.toppings.add(topping1, topping2, topping3)
+
+        p2 = Pizza.objects.create(name="榴莲披萨")
+        p2.toppings.add(topping4, topping5, topping6)
+
+        p3 = Pizza.objects.create(name="水果披萨")
+        p3.toppings.add(topping1, topping4, topping5, topping6)
+
+        p4 = Pizza.objects.create(name="暗黑披萨")
+        p4.toppings.add(topping1, topping6)
+
+        r1 = Restaurant.objects.create(name="高级披萨餐厅", best_pizza=p1)
+        r1.pizzas.add(p1, p2, p3, p4)
+
+        r2 = Restaurant.objects.create(name="水果萨餐厅", best_pizza=p2)
+        r2.pizzas.add(p2, p3)
+
+        r3 = Restaurant.objects.create(name="素食披萨餐厅", best_pizza=p3)
+        r3.pizzas.add(p1, p3)
+
+        r4 = Restaurant.objects.create(name="暗黑萨餐厅", best_pizza=p4)
+        r4.pizzas.add(p1, p2)
