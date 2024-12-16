@@ -90,11 +90,17 @@ class Publisher(models.Model):
     """
     books = models.ManyToManyField(Book)
 
-    __str__ = lambda self: utils.object_to_string(self)
+    # __str__ = lambda self: utils.object_to_string(self)
 
     @staticmethod
     def mock_data():
         return Publisher(publisher_name=f"Mock Publisher {faker.name()}")
+
+    def __str__(self):
+        return "%s (%s)" % (
+            self.publisher_name,
+            ", ".join(book.title for book in self.books.all()),
+        )
 
 
 class Reader(models.Model):

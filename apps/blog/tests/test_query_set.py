@@ -401,7 +401,32 @@ class QuerySetTest(BasedTestCase):
         # output_sql(Publisher.objects.select_related("books").get(publisher_name="Packt"))
 
     def test_query_set_prefetch_related(self):
+        """
+        在一个批次中自动检索每个指定查询的相关对象
+            与 select_related 有类似的目的，二者都是为了阻止因访问相关对象而引起的数据库查询潮，但策略却完全不同
+            select_related 的工作方式是创建一个 SQL 连接，并在 SELECT 语句中包含相关对象的字段。
+            出于这个原因，select_related 在同一个数据库查询中得到相关对象。
+            然而，为了避免因跨越“many”关系进行连接而产生更大的结果集，select_related 仅限于 o2o和 m2o
+        prefetch_related 支持多对多、对一和 GenericRelation 对象，外键和一对一关系，
+        还支持 GenericForeignKey 的预取，但是必须在 GenericPrefetch 的 querysets 参数中提供每个 ContentType 的查询集
+        """
         print("----------------prefetch_related--------------------")
+        # 多对一：触发2条SQL
+        # SELECT "blog_book"."id", "blog_book"."title", "blog_book"."price", "blog_book"."author_id" FROM "blog_book" LIMIT 21
+        # SELECT "blog_author"."id", "blog_author"."name", "blog_author"."age", "blog_author"."user_id", "blog_author"."studio_id" FROM "blog_author" WHERE "blog_author"."id" IN (1)
+        output_sql(Book.objects.prefetch_related("author"))
+
+        # 触发3条SQL
+        # self.books.all() 将使用数据库查询
+        output_sql(Publisher.objects.all())
+        # 多对多：触发2条SQL
+        # self.books.all() 将使用 prefetch_related 缓存数据
+        output_sql(Publisher.objects.prefetch_related("books"))
+
+        # 可以多表关联查询
+        output_sql(Publisher.objects.prefetch_related("books__reader_set"))
+        output_sql(Publisher.objects.prefetch_related("books__author"))
+
 
 
     def test_query_func(self):
@@ -493,4 +518,10 @@ class QuerySetTest(BasedTestCase):
 
             Post.objects.create(title=faker.name(), content=faker.text(), author=self.user)
         print("prepare data: ", Book.objects.all())
+
+        publisher = Publisher.objects.create(publisher_name=faker.company())
+        publisher.books.add(1, 2, 3, 7)
+
+        publisher = Publisher.objects.create(publisher_name=faker.company())
+        publisher.books.add(4, 5, 6, 8, 9)
         reset_queries()
