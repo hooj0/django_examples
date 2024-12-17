@@ -3,7 +3,10 @@ from apps.blog.tests.tests import BasedTestCase, sql_decorator
 
 
 class ExtendModelTest(BasedTestCase):
-
+    """
+    多表模型继承
+    https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/#multi-table-inheritance
+    """
     def setUp(self):
         super().setUp()
 

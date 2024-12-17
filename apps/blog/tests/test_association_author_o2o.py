@@ -6,6 +6,13 @@ from apps.blog.tests.tests import BasedTestCase, sql_decorator, output_sql
 
 
 class AuthorModelTest(BasedTestCase):
+    """
+    一对一关系：
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#onetoonefield
+    示例参考：
+        https://docs.djangoproject.com/zh-hans/5.1/topics/db/examples/one_to_one/
+    """
+
 
     def setUp(self):
         super().setUp()

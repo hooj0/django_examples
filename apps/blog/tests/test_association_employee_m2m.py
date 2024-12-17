@@ -3,7 +3,10 @@ from apps.blog.tests.tests import BasedTestCase, output_sql
 
 
 class EmployeeModelTest(BasedTestCase):
-
+    """
+    多对多关系延迟加载
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#lazy-relationships
+    """
     def test_create(self):
         # 创建员工
         e1 = Employee.objects.create(name='ai')

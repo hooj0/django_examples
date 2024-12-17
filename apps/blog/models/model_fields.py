@@ -7,6 +7,10 @@ from common.util import utils
 
 
 class Comment(models.Model):
+    """
+    模型字段和字段属性参考
+       https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/
+   """
     id = models.AutoField(primary_key=True)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
 

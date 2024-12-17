@@ -6,7 +6,12 @@ from apps.blog.tests.tests import BasedTestCase, sql_decorator, output_sql
 
 
 class PublisherModelTest(BasedTestCase):
-
+    """
+    多对多关系：
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#manytomanyfield
+    示例参考：
+    https://docs.djangoproject.com/zh-hans/5.1/topics/db/examples/many_to_many/
+    """
     def setUp(self):
         super().setUp()
 

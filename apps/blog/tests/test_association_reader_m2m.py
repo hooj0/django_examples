@@ -6,7 +6,12 @@ from apps.blog.tests.tests import BasedTestCase, sql_decorator, output_sql
 
 
 class PublisherModelTest(BasedTestCase):
-
+    """
+    多对多关系：
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#manytomanyfield
+    示例参考：
+    https://docs.djangoproject.com/zh-hans/5.1/topics/db/examples/many_to_many/
+    """
     def setUp(self):
         super().setUp()
 
@@ -72,6 +77,10 @@ class PublisherModelTest(BasedTestCase):
         output_sql(reader.books.all())
 
     def test_m2m_crud(self):
+        """
+        关联关系的增删改
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/relations/
+        """
         recommended_book = Book.objects.create(title=faker.sentence(), author=self.author, price=1.11)
         book = Book.objects.create(title=faker.sentence(), author=self.author, price=faker.pydecimal(left_digits=8, right_digits=2))
         new_book = Book.objects.create(title=faker.sentence(), author=self.author, price=1.11)

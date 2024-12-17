@@ -10,7 +10,9 @@ from apps.blog.tests.tests import BasedTestCase, output, output_sql, sql_decorat
 
 
 class ChoicesModelTest(BasedTestCase):
-
+    """
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#choices
+    """
     def setUp(self):
         super().setUp()
 

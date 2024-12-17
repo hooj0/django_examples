@@ -8,7 +8,9 @@ from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, 
 
 
 class TagsModelTest(BasedTestCase):
-
+    """
+    https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/
+    """
     def setUp(self):
         super().setUp()
         # 创建User

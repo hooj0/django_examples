@@ -7,7 +7,10 @@ from apps.blog.tests.tests import BasedTestCase, output_sql, sql_decorator
 
 
 class TestComment(BasedTestCase):
-
+    """
+    模型字段和字段属性参考
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/
+    """
     def setUp(self):
         super().setUp()
         # 创建User

@@ -3,7 +3,10 @@ from django.db import models
 
 from common.util import utils
 
-
+"""
+多表模型继承
+https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/#multi-table-inheritance
+"""
 class Person(models.Model):
     name = models.CharField(max_length=50)
     age = models.IntegerField()

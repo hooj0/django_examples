@@ -17,6 +17,7 @@ class Studio(models.Model):
 
 """
     一对一关联
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#onetoonefield
 """
 class Author(models.Model):
     name = models.CharField("作者名称", max_length=50, blank=False, null=False)
@@ -34,6 +35,7 @@ class Author(models.Model):
 
 """
     多对一关联
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#foreignkey
 """
 class Book(models.Model):
     title = models.CharField("书名", max_length=50, blank=False, null=False)
@@ -75,6 +77,7 @@ class Book(models.Model):
 
 """
     多对多关联
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#manytomanyfield
 """
 class Publisher(models.Model):
     publisher_name = models.CharField(max_length=50, blank=False, null=False)

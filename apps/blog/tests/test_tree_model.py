@@ -5,7 +5,10 @@ from apps.blog.tests.tests import BasedTestCase, sql_decorator
 
 
 class TreeModelTest(BasedTestCase):
-
+    """
+    递归关系
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#recursive-relationships
+    """
     def setUp(self):
         super().setUp()
 

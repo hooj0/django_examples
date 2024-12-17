@@ -7,6 +7,9 @@ from common.util import utils
 
 
 class Choices(models.Model):
+    """
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/fields/#choices
+    """
     class Level(models.TextChoices):
         FRESHMAN = "FR", _("大一新生")
         SOPHOMORE = "SO", _("大二")
