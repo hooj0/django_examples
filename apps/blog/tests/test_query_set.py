@@ -3,7 +3,7 @@ from django.db import connection, transaction
 from django.db import reset_queries
 from django.db.models import F, ExpressionWrapper, DecimalField, Prefetch
 from django.db.models.aggregates import Count, Avg, Sum
-from django.db.models.functions import Coalesce, Lower
+from django.db.models.functions import Lower
 from django.db.models.query import EmptyQuerySet
 from django.utils import timezone
 
