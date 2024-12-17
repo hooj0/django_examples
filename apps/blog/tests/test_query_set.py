@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db import connection
+from django.db import connection, transaction
 from django.db import reset_queries
 from django.db.models import F, ExpressionWrapper, DecimalField, Prefetch
 from django.db.models.aggregates import Count, Avg, Sum
@@ -14,7 +14,8 @@ from common.util.utils import object_to_string
 
 class QuerySetTest(BasedTestCase):
     """
-    https://docs.djangoproject.com/zh-hans/5.1/ref/models/querysets/#top
+    返回QuerySet部分：
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/querysets/#methods-that-return-new-querysets
     """
 
     def setUp(self):
@@ -60,22 +61,6 @@ class QuerySetTest(BasedTestCase):
         print(queryset.ordered)     # False
         print(queryset.db)          # default
         print(object_to_string(queryset))
-
-    def test_query_set_object(self):
-        print("----------------objects--------------------")
-        output_sql(Tags.objects.get(id=2))
-        output_sql(Tags.objects.get(pk=2))
-        output_sql(Tags.objects.get(tag_name='tag test 1'))
-        # ORDER BY "blog_tags"."id" ASC LIMIT 1
-        output_sql(Tags.objects.first())
-        # ORDER BY "blog_tags"."id" DESC LIMIT 1
-        output_sql(Tags.objects.last())
-        # COUNT(*)
-        output_sql(Tags.objects.count())
-        output_sql(Tags.objects.values('tag_name', 'id').last())
-        # SELECT COUNT(*) FROM (SELECT DISTINCT "blog_tags"."tag_name" AS "col1" FROM "blog_tags") subquery
-        output_sql(Tags.objects.values('tag_name').distinct().count())
-        output_sql(len(Tags.objects.values('tag_name').distinct()))
 
     def test_query_set_all(self):
         print("----------------all--------------------")
@@ -479,7 +464,112 @@ class QuerySetTest(BasedTestCase):
         #     Prefetch("pizzas__toppings", queryset=Topping.objects.using("replica")),
         # ).using("cold-storage")
 
+    def test_query_set_extra(self):
+        """
+        用于将特定的子句注入到由 QuerySet 生成的 SQL 中
+        """
+        print("----------------extra--------------------")
+        output_sql(Book.objects.extra(select={"price_cents": "price * 100"}, order_by=["price_cents"]))
+        # SELECT (select 4) AS "val", "blog_book"."id", "blog_book"."title", "blog_book"."price", "blog_book"."author_id" FROM "blog_book"
+        output_sql(Book.objects.extra(select={"val": "select 4"}))
+        # SELECT (created_date > '2006-01-01') AS "is_recent", "blog_post"."id", ...
+        output_sql(Post.objects.extra(select={"is_recent": "created_date > '2006-01-01'"}))
+        # 列子句查询
+        # SELECT (SELECT COUNT(*) FROM blog_tags WHERE blog_tags.post_id = blog_post.id) AS "tag_count",
+        output_sql(Post.objects.extra(select={"tag_count": "SELECT COUNT(*) FROM blog_tags WHERE blog_tags.post_id = blog_post.id"}))
 
+        # 设置参数
+        # SELECT ('one') AS "a", ('two') AS "b",
+        output_sql(Post.objects.extra(select={"a": "%s", "b": "%s"}, select_params=("one", "two")))
+
+        # WHERE (title='a' OR title='b') AND (status = False)
+        output_sql(Post.objects.extra(where=["title='a' OR title='b'", "status = False"]))
+
+        # 设置表名
+        output_sql(Post.objects.extra(where=["title='a' OR title='b'", "status = False"], tables=["blog_post"]))
+
+        # 排序
+        qs = output_sql(Book.objects.extra(select={"price_cents": "price * 100"}))
+        # FROM "blog_book" ORDER BY 1 DESC
+        output_sql(qs.extra(order_by=["-price_cents"]))
+
+        # where 条件传参
+        # WHERE (title='a')
+        output_sql(Book.objects.extra(where=["title=%s"], params=["a"]))
+
+    def test_query_set_defer(self):
+        """
+        不要从数据库中检索字段
+        """
+        print("----------------defer--------------------")
+        output_sql(Post.objects.defer("content", "published_date", "image"))
+        output_sql(Post.objects.defer("content", "published_date", "image").filter(id=1))
+        # 支持链式
+        output_sql(Post.objects.defer("content", "published_date", "image").filter(id=1).defer("author", "created_date"))
+        # 支持跨表
+        output_sql(Post.objects.defer("content", "published_date", "image").filter(id=1).defer("author__email", "author__last_name"))
+
+        # 清除
+        output_sql(Post.objects.defer("content", "published_date", "image").filter(id=1).defer("author__email", "author__last_name").defer(None))
+
+    def test_query_set_only(self):
+        """
+        only() 方法实际上是 defer() 的相反，只查询相应的字段
+        """
+        print("----------------only--------------------")
+        # SELECT "blog_post"."id", "blog_post"."content", "blog_post"."published_date", "blog_post"."image" FROM "blog_post"
+        output_sql(Post.objects.only("content", "published_date", "image"))
+        output_sql(Post.objects.only("content", "published_date", "image").filter(id=1))
+        # 支持链式
+        output_sql(Post.objects.only("content", "published_date", "image").filter(id=1).only("author", "created_date"))
+        # 支持跨表
+        output_sql(Post.objects.only("content", "published_date", "image").filter(id=1).only("author__email", "author__last_name"))
+
+    def test_query_set_using(self):
+        """
+        使用指定的数据库
+        """
+        print("----------------using--------------------")
+        # default
+        output_sql(Book.objects.db)
+        # 设置数据库
+        # output_sql(Book.objects.using("replica"))
+        # output_sql(Book.objects.using("replica").filter("title='book'"))
+
+    def test_query_set_select_for_update(self):
+        """
+        SELECT FOR UPDATE
+        select_for_update(nowait=False, skip_locked=False, of=(), no_key=False)
+        返回一个查询集，该查询集将锁定行直到事务结束，生成 SELECT ... FOR UPDATE SQL 语句
+        默认情况下，select_for_update() 锁定所有被查询选择的行
+        nowait=True 不等待/不阻塞
+        skip_locked=True 来忽略锁定的记录
+        nowait 和 skip_locked 是相互排斥的，在启用这两个选项的情况下调用 select_for_update() 会导致一个 ValueError
+        of=(...) 中使用与 select_related() 相同的字段语法指定你要锁定的相关对象。使用 'self' 来表示查询集的模型
+        no_key=True 来获得一个较弱的锁（外键有插入实际值而不是None）
+
+        为了正确测试 select_for_update() 应该使用 TransactionTestCase
+        """
+        print("----------------select_for_update--------------------")
+        books = Book.objects.select_for_update().filter(id__lt=3)
+        with transaction.atomic():
+            # for book in books，所有匹配的条目将被锁定，直到事务块结束
+            # 如果另一个事务已经获得了所选行的锁，那么查询将被阻塞，直到锁被释放
+            # 不想阻塞 select_for_update(nowait=True)
+            # select_for_update(skip_locked=True) 来忽略锁定的记录
+            for book in books:
+                print(book)
+
+        # 锁定自引用模型和父模型：在使用 多表继承 时要锁定父模型，必须在 of 参数中指定父链接字段
+        Restaurant.objects.select_for_update(of=("self", "place_ptr"))
+
+        # 锁定指定列
+        qs = Restaurant.objects.values("name").select_for_update(of=("name"))
+        with transaction.atomic():
+            for restaurant in qs:
+                print(restaurant)
+
+        Restaurant.objects.select_related("best_pizza").select_for_update().exclude(best_pizza=None)
 
     def test_query_func(self):
         print("----------------test_query_func--------------------")
@@ -609,3 +699,4 @@ class QuerySetTest(BasedTestCase):
 
         r4 = Restaurant.objects.create(name="暗黑萨餐厅", best_pizza=p4)
         r4.pizzas.add(p1, p2)
+        reset_queries()
