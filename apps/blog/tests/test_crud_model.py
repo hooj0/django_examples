@@ -10,6 +10,7 @@ from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, 
 class TagsModelTest(BasedTestCase):
     """
     https://docs.djangoproject.com/zh-hans/5.1/topics/db/models/
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/instances/
     """
     def setUp(self):
         super().setUp()
@@ -35,6 +36,11 @@ class TagsModelTest(BasedTestCase):
 
         # tmp = Tags.objects.create_tag('tag bb', 1)
         print("tmp: ", tmp)
+
+        # 强制保存或更新
+        tags_foo = Tags(tag_name='tag test foo', post=self.post)
+        tags_foo.save(force_insert=True)
+        tags_foo.save(force_update=True)
 
     @sql_decorator
     def test_update_tags(self):
