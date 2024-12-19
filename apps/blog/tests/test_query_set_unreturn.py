@@ -241,6 +241,31 @@ class QuerySetUnReturnTest(BasedTestCase):
         # 指定排序方式
         output_sql(Post.objects.latest('title', '-published_date'))
 
+        # 和 latest 相反
+        output_sql(Tags.objects.earliest('id'))
+
+    def test_exists(self):
+        """
+        如果 QuerySet 包含任何结果，则返回 True，如果不包含，则返回 False。
+        该函数试图以最简单、最快速的方式执行查询，但它 执行 的查询与普通的 QuerySet 查询几乎相同。
+        """
+        print("----------------exists--------------------")
+        qs = Tags.objects.filter(tag_name='tag test 1')
+        if qs.exists():
+            print("exists")
+        else:
+            print("not exists")
+
+        if qs:
+            print("exists")
+        else:
+            print("not exists")
+
+    def test_contains(self):
+        print("----------------contains--------------------")
+        qs = Tags.objects.all()
+        output_sql(qs.contains(Tags.objects.get(tag_name='tag test 1')))
+
     def test_simple_func(self):
         # ORDER BY "blog_tags"."id" ASC LIMIT 1
         output_sql(Tags.objects.first())
