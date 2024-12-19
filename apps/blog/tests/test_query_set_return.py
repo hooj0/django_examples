@@ -532,10 +532,12 @@ class QuerySetTest(BasedTestCase):
         print("----------------using--------------------")
         # default
         output_sql(Book.objects.db)
+
         # 设置数据库
         # output_sql(Book.objects.using("replica"))
         # output_sql(Book.objects.using("replica").filter("title='book'"))
 
+    @sql_decorator
     def test_query_set_select_for_update(self):
         """
         SELECT FOR UPDATE
@@ -571,32 +573,11 @@ class QuerySetTest(BasedTestCase):
 
         Restaurant.objects.select_related("best_pizza").select_for_update().exclude(best_pizza=None)
 
-    def test_query_func(self):
-        print("----------------test_query_func--------------------")
-
-        foo = Tags.objects.all()
-
-        # DISTINCT
-        output(foo.distinct())
-        output(foo.reverse())
-        print(foo.count())
-        print(list(foo))
-
-        # 执行的数据库
-        print(foo.db)
-        # 是否排序
-        print(foo.ordered)
-
-        for item in Tags.objects.all():
-            print(item)
-
-        if not Tags.objects.filter(tag_name="Test"):
-            print("There is at least one Entry with the headline Test")
-
     def test_query_range(self):
         print("----------------test_query_range--------------------")
         # LIMIT 3
         output_sql(Tags.objects.all()[:3])
+        print(type(Tags.objects.all()[:3])) # <class 'django.db.models.query.QuerySet'>
         # LIMIT 2 OFFSET 1
         output_sql(Tags.objects.all()[1:3])
 

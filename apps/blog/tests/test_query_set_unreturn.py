@@ -266,6 +266,7 @@ class QuerySetUnReturnTest(BasedTestCase):
         qs = Tags.objects.all()
         output_sql(qs.contains(Tags.objects.get(tag_name='tag test 1')))
 
+
     def test_simple_func(self):
         # ORDER BY "blog_tags"."id" ASC LIMIT 1
         output_sql(Tags.objects.first())
@@ -279,6 +280,26 @@ class QuerySetUnReturnTest(BasedTestCase):
         output_sql(Tags.objects.values('tag_name').distinct().count())
         output_sql(len(Tags.objects.values('tag_name').distinct()))
 
+    def test_as_manager(self):
+        # 该方法返回一个 Manager 的实例，其中包含 QuerySet 的方法的副本
+        # https://docs.djangoproject.com/zh-hans/5.1/topics/db/managers/#create-manager-with-queryset-methods
+        manager = Tags.objects.all().as_manager()
+
+    def test_explain(self):
+        """
+        explain(format=None, **options)
+        返回一个 QuerySet 的执行计划的字符串，它详细说明了数据库将如何执行查询，包括将使用的任何索引或联接。了解这些细节可以帮助你提高慢速查询的性能。
+        format 参数改变数据库默认的输出格式，通常是基于文本的。
+            PostgreSQL 支持 ''TEXT'、'JSON'、'YAML' 和 'XML' 格式。
+            MariaDB 和 MySQL 支持 ''TEXT' （也叫 'TRADITIONAL'）和 'JSON' 格式。
+            MySQL 8.0.16+ 还支持改进的 'TREE' 格式，它类似于 PostgreSQL 的 'TEXT' 输出，如果支持的话，默认使用。
+        """
+        # 2 0 0 SCAN blog_tags
+        output_sql(Tags.objects.filter(tag_name='tag test 1').explain())
+        # output_sql(Tags.objects.filter(tag_name='tag test 1').explain(format="JSON"))
+
+        # 返回有关查询的更多信息的标志。将这些标志作为关键字参数传递。例如，在使用 PostgreSQL 时
+        print(Tags.objects.filter(tag_name="My Blog").explain(verbose=True, analyze=True))
 
     def query_set_prepare_data(self):
         Tags.objects.create(tag_name='tag test 1', post=self.post)
