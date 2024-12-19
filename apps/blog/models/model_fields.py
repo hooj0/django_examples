@@ -34,7 +34,7 @@ class Comment(models.Model):
     ip_address = models.GenericIPAddressField(db_comment="IP地址", default="127.0.0.1")
 
     size = models.IntegerField(db_comment="评论长度", db_column="comment_length", null=True)
-    json = models.JSONField(verbose_name="JSON数据", default=dict)
+    json = models.JSONField(verbose_name="JSON数据", default=dict, null=True)
     url_param = models.SlugField(verbose_name="URL路径参数", null=True)
     uri = models.URLField(verbose_name="URL地址", blank=True)
     uuid = models.UUIDField(verbose_name="UUID", editable=False, unique=True, null=True)

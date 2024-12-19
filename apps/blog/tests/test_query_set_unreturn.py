@@ -47,11 +47,17 @@ class QuerySetUnReturnTest(BasedTestCase):
         output_sql(Tags.objects.get(pk=2))
         output_sql(Tags.objects.get(tag_name='tag test 1'))
 
+        # 多条件组合
         post = Post.objects.get(id=1)
         # WHERE ("blog_tags"."post_id" = 1 AND "blog_tags"."tag_name" = 'tag test 1')
         output_sql(Tags.objects.get(Q(post=post) & Q(tag_name='tag test 1')))
 
+        # 不传参数
         output_sql(Tags.objects.filter(tag_name='tag test 1').get())
+
+        # 支持跨表
+        # output_sql(Tags.objects.get(post__id=1))
+        # output_sql(Tags.objects.get(post__pk=1))
 
     @sql_decorator
     def test_get_or_create(self):

@@ -605,6 +605,28 @@ class QuerySetTest(BasedTestCase):
         # 步长为1，在0-5区间取值
         print(list[2:8:3])
 
+    def test_query_set_cache(self):
+        # https://docs.djangoproject.com/zh-hans/5.1/topics/db/queries/#caching-and-querysets
+        output_sql(Tags.objects.all())
+
+        # 使用缓存
+        # <generator object QuerySetTest.test_query_set_cache.<locals>.<genexpr> at 0x0000024435E15E40>
+        print(item.tag_name for item in Tags.objects.all())
+        print(item.post_id for item in Tags.objects.all())
+
+        qs = Tags.objects.all()
+        print(item.tag_name for item in qs)
+        print(item.post_id for item in qs)
+
+        print(qs[2])
+        print(qs[2])
+
+        # 不使用缓存操作
+        # [entry for entry in queryset]
+        # bool(queryset)
+        # entry in queryset
+        # list(queryset)
+
     def test_sql_raw(self):
         print("----------------test_sql_raw--------------------")
         # 执行一些操作
