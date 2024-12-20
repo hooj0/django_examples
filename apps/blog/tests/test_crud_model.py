@@ -180,3 +180,45 @@ class TagsModelTest(BasedTestCase):
         ]
         # 批量更新必须有主键
         Tags.objects.bulk_update(data, ['tag_name'], batch_size=2)
+
+    @sql_decorator
+    def test_model_compare(self):
+        Tags(tag_name='tag test 1', post=self.post, id=1).save()
+
+        tag = Tags.objects.first()
+        print(tag)
+
+        tag2 = Tags(tag_name='tag test 2', post=self.post, id=1)
+        print(tag2)
+        print(tag == tag2) # True
+        print(tag.pk == tag2.pk) # True
+        print(tag.id == tag2.id) # True
+
+        print(tag is tag2) # False
+
+        tag3 = Tags(tag_name='tag test 1', post=self.post, id=1)
+        print(tag3)
+
+        print(tag.__dict__ == tag3.__dict__) # False
+
+        tag_dict, tag3_dict = tag.__dict__, tag3.__dict__
+        tag_dict.pop('_state')
+        tag3_dict.pop('_state')
+        print(tag_dict == tag3_dict)  # True
+
+    def test_model_copy(self):
+        Tags.objects.create(tag_name='tag test 1', post=self.post)
+        print(Tags.objects.count())
+        tag = Tags.objects.first()
+        print(tag.id)
+
+        tag.id = None
+        tag.save()
+        print(tag.id)
+        print(Tags.objects.all())
+
+        tag.id = None
+        tag._state.adding = True
+        tag.save()
+        print(tag.id)
+        print(Tags.objects.all())
