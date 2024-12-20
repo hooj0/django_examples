@@ -3,7 +3,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db import reset_queries
-from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance
+from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance, Aggregate
 
 from apps.blog.models import Tags, Post
 from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, sql_decorator, output
@@ -24,6 +24,10 @@ class QueryFieldFuncTest(BasedTestCase):
         print("posts: ", Post.objects.all())
 
     def test_aggregate_functions(self):
+        """
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#aggregate-expressions
+        https://docs.djangoproject.com/zh-hans/5.1/topics/db/aggregation/#top
+        """
         self.query_set_prepare_data()
         print("----------------test_aggregate_functions--------------------")
         # SELECT COALESCE(AVG("blog_tags"."id"), 0.0) AS "id__avg" FROM "blog_tags"
@@ -57,6 +61,18 @@ class QueryFieldFuncTest(BasedTestCase):
         # 过滤后再聚和统计
         output_sql(Tags.objects.filter(tag_name__contains='test').aggregate(Sum("id", default=0)))
         output_sql(Tags.objects.exclude(tag_name__contains='test').aggregate(Sum("id", default=0)))
+
+        class MySum(Aggregate):
+            # Supports SUM(ALL field).
+            function = "SUM"
+            template = "%(function)s(%(all_values)s%(expressions)s)"
+            allow_distinct = False
+
+            def __init__(self, expression, all_values=False, **extra):
+                super().__init__(expression, all_values="ALL " if all_values else "", **extra)
+
+        # SELECT COALESCE(SUM("blog_tags"."id"), 0) AS "total" FROM "blog_tags" WHERE NOT ("blog_tags"."tag_name" LIKE '%test%' ESCAPE '\')
+        output_sql(Tags.objects.exclude(tag_name__contains='test').aggregate(total=MySum("id", default=0)))
 
     def test_annotate(self):
         self.query_set_prepare_data()
@@ -100,6 +116,9 @@ class QueryFieldFuncTest(BasedTestCase):
         output_sql(Tags.objects.annotate(tag_num=Count("tag_name"), abc=Q(tag_name__contains='test')))
         # 分组并统计
         output_sql(Tags.objects.annotate(tag_num=Count("tag_name")).aggregate(Sum("tag_num")))
+
+    def test_fu(self):
+        pass
 
     def test_sql_monitor(self):
         self.query_set_prepare_data()

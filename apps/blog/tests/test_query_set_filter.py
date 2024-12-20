@@ -2,8 +2,10 @@ import datetime
 
 from django.contrib.auth.models import User
 from django.db import reset_queries
-from django.db.models import Q, F, Value, JSONField
+from django.db.models import Q, F, Value, JSONField, Count, CharField, Exists, OuterRef, ExpressionWrapper, DateTimeField, BooleanField, Func
 from django.db.models.fields.json import KT
+from django.db.models.functions import Upper, Length, Lower
+from django.db.models.lookups import GreaterThan
 
 from apps.blog.models import Tags, Post, Book, Comment
 from apps.blog.tests.tests import BasedTestCase, output_sql, output
@@ -105,7 +107,7 @@ class QueryFieldFuncTest(BasedTestCase):
         F 表达式：
             - 将模型字段值与同一模型中的另一字段做比较
             - 使用加法、减法、乘法、除法、取模和幂算术，既可以与常数一起使用，也可以与其他 F() 对象一起使用
-
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#django.db.models.F
         """
         # 比较两个字段
         # WHERE "blog_tags"."id" > ("blog_tags"."post_id")
@@ -129,10 +131,40 @@ class QueryFieldFuncTest(BasedTestCase):
         output_sql(Post.objects.filter(created_date__gt=F('published_date') + datetime.timedelta(days=3)))
         output_sql(Post.objects.filter(created_date__year=F('published_date__year')))
 
+        # 更新操作应用表达式
+        post = Post.objects.get(id=1)
+        post.published_date = F("published_date") + 1
+        output_sql(post.save())
+
+        post.refresh_from_db()
+        post.content = F("content")[1:4] + "test"
+        output_sql(post.save())
+
+        post.refresh_from_db()
+        print(post.content)
+
+        post = Post.objects.filter(id=1)
+        output_sql(post.update(created_date=F("published_date")))
+
+        # output_sql(Post.objects.annotate(expires=ExpressionWrapper(F("published_date") - F("created_date"), output_field=DateTimeField())))
+
+        # 空值排序
+        # ORDER BY "blog_post"."published_date" DESC NULLS LAST
+        output_sql(Post.objects.order_by(F("published_date").desc(nulls_last=True)))
+
+        # 逻辑判断
+        # WHERE "blog_post"."status" = (NOT "blog_post"."status")
+        output_sql(Post.objects.filter(status=~F('status')))
+        output_sql(Post.objects.filter(~Q(status=True)))
+
+        # WHERE "blog_post"."status" = (NOT 1)
+        output_sql(Post.objects.filter(status=~Value(False, output_field=BooleanField())))
+
     def test_filter_q_func(self):
         """
         通过 Q 对象完成复杂查询¶
         Q 对象可以使用 &、| 和 ^ 运算符组合。当在两个 Q 对象上使用运算符时，它会产生一个新的 Q 对象。
+        https://docs.djangoproject.com/zh-hans/5.1/topics/db/queries/#complex-lookups-with-q-objects
         """
         output_sql(Q(a__b__startswith='foo')) # (AND: ('a__b__startswith', 'foo'))
         output_sql(Q(a__b__startswith='foo') | Q(a__b__startswith='bar')) # (OR: ('a__b__startswith', 'foo'), ('a__b__startswith', 'bar'))
@@ -173,6 +205,9 @@ class QueryFieldFuncTest(BasedTestCase):
         output_sql(Post.objects.filter(query))
 
     def test_filter_json(self):
+        """
+        https://docs.djangoproject.com/zh-hans/5.1/topics/db/queries/#querying-jsonfield
+        """
         # json 插入字典数据
         output_sql(Comment.objects.create(post=self.post, email="jack@qq.com", json={"name": "test", "age": 18}))
 
@@ -219,6 +254,90 @@ class QueryFieldFuncTest(BasedTestCase):
         output_sql(Comment.objects.filter(json__has_keys=['name', 'age']))
         output_sql(Comment.objects.filter(json__has_keys=['name', 'b'])) # empty
         output_sql(Comment.objects.filter(json__has_any_keys=['name', 'a', 'b']))
+
+    def test_filter_expression(self):
+        """
+        查询表达式
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#
+        """
+        # 创建时使用表达式
+        company = output_sql(Post.objects.create(title="Google", content=Upper(Value("goog")), author=self.user))
+        # 如果需要访问该字段，请务必刷新它。
+        company.refresh_from_db()
+        print(company.content) # 在不刷新情况输出 Upper(Value('goog'))
+
+        # 效果一致
+        output_sql(Post.objects.annotate(num_tags=Count("tags")))
+        output_sql(Post.objects.annotate(num_tags=Count(F("tags"))))
+
+        # 根据字符串长度排序
+        # ORDER BY LENGTH("blog_post"."title") ASC
+        output_sql(Post.objects.order_by(Length("title").asc()))
+        output_sql(Post.objects.order_by(Length("title").desc()))
+
+        # 注册查找api，支持排序/查找
+        CharField.register_lookup(Length)
+        # ORDER BY LENGTH("blog_post"."title") ASC
+        output_sql(Post.objects.order_by("title__length"))
+        #  WHERE LENGTH("blog_post"."title") > 2
+        output_sql(Post.objects.filter(title__length__gt=2))
+
+        # 子查询
+        # WHERE EXISTS(SELECT 1 AS "a" FROM "blog_tags" U0 WHERE U0."post_id" = ("blog_post"."id") LIMIT 1)
+        output_sql(Post.objects.filter(Exists(Tags.objects.filter(post=OuterRef("pk")))))
+        output_sql(Post.objects.filter(Exists(Tags.objects.filter(post=OuterRef("pk"), tag_name__contains="test"))))
+
+        # 比较
+        # WHERE "blog_post"."published_date" > ("blog_post"."created_date")
+        output_sql(Post.objects.filter(GreaterThan(F("published_date"), F("created_date"))))
+
+        # 支持列表达式
+        # ... "blog_post"."status", "blog_post"."published_date" > ("blog_post"."created_date") AS "need_chairs" FROM "blog_post"
+        output_sql(Post.objects.annotate(
+            need_chairs=GreaterThan(F("published_date"), F("created_date")),
+        ))
+
+    def test_filter_func(self):
+        """
+        函数表达式
+            https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#django.db.models.Func
+        示例教程：
+            https://lxblog.com/qianwen/share?shareId=c160d16c-c094-4bfc-8d29-a88ad8d54393
+        支持数据库函数：
+            https://docs.djangoproject.com/zh-hans/5.1/ref/models/database-functions/
+        """
+        # LOWER("blog_post"."title") AS "field_lower" FROM "blog_post"
+        output_sql(Post.objects.annotate(field_lower=Lower("title")))
+        output_sql(Post.objects.annotate(field_lower=Lower(F("title"))))
+
+        # OWER("blog_post"."title") AS "field_lower" FROM "blog_post"
+        output_sql(Post.objects.annotate(field_lower=Func("title", function="LOWER")))
+        output_sql(Post.objects.annotate(field_lower=Func(F("title"), function="LOWER")))
+
+        # 自定义函数表达式
+        class MyLower(Func):
+            function = "LOWER"
+
+        output_sql(Post.objects.annotate(field_lower=MyLower("title")))
+        output_sql(Post.objects.annotate(field_lower=MyLower(F("title"))))
+
+        class MyFunc(Func):
+            function = "UPPER"
+            template = "%(function)s(%(expressions)s)"
+            arg_joiner = " "
+            arity = 1
+            output_field = CharField()
+
+            def as_sqlite(self, compiler, connection, **extra_context):
+                return super().as_sql(
+                    compiler,
+                    connection,
+                    function="UP_WS",
+                    template="%(function)s('', %(expressions)s)",
+                    **extra_context
+                )
+
+        output_sql(Post.objects.annotate(field_func=MyFunc("title")))
 
     def query_set_prepare_data(self):
         Tags.objects.create(tag_name='tag test 1', post=self.post)
