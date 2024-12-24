@@ -259,6 +259,8 @@ class QueryFieldFuncTest(BasedTestCase):
         """
         查询表达式
         https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#
+        编写自定义查询表达式
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#writing-your-own-query-expressions
         """
         # 创建时使用表达式
         company = output_sql(Post.objects.create(title="Google", content=Upper(Value("goog")), author=self.user))

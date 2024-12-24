@@ -1,12 +1,14 @@
 import datetime
 
 from django.contrib.auth.models import User
-from django.db import connection
 from django.db import reset_queries
-from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance, Aggregate
+from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance, Aggregate, OuterRef, Subquery, Exists, CharField
+from django.db.models.expressions import RawSQL
+from django.db.models.functions import Length
+from django.utils import timezone
 
 from apps.blog.models import Tags, Post
-from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, sql_decorator, output
+from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager
 
 
 class QueryFieldFuncTest(BasedTestCase):
@@ -22,11 +24,14 @@ class QueryFieldFuncTest(BasedTestCase):
         self.post = Post.objects.create(title='this is post.', content='this is content.', author=self.user)
         # 查询所有Post
         print("posts: ", Post.objects.all())
+        reset_queries()
 
     def test_aggregate_functions(self):
         """
         https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#aggregate-expressions
         https://docs.djangoproject.com/zh-hans/5.1/topics/db/aggregation/#top
+        示例参考：
+        https://lxblog.com/qianwen/share?shareId=a57834b8-dff7-4b8b-bfa6-a2c9cb31bb4c
         """
         self.query_set_prepare_data()
         print("----------------test_aggregate_functions--------------------")
@@ -117,8 +122,61 @@ class QueryFieldFuncTest(BasedTestCase):
         # 分组并统计
         output_sql(Tags.objects.annotate(tag_num=Count("tag_name")).aggregate(Sum("tag_num")))
 
-    def test_fu(self):
-        pass
+    def test_subquery(self):
+        """
+        Subquery(queryset, output_field=None)
+        使用 Subquery 表达式向 QuerySet 添加一个显式子查询
+
+        OuterRef(field)
+        当 Subquery 中的查询集需要引用外部查询或其转换的字段时，请使用 OuterRef
+        """
+        # SELECT "blog_post"."id", "blog_post"."title", "blog_post"."content", "blog_post"."created_date", "blog_post"."published_date", "blog_post"."image", "blog_post"."author_id", "blog_post"."status",
+        # (SELECT U0."tag_name" FROM "blog_tags" U0 WHERE U0."post_id" = ("blog_post"."id") ORDER BY U0."tag_name" DESC LIMIT 1) AS "newest_tagname"
+        # FROM "blog_post" LIMIT 21
+        newest = Tags.objects.filter(post=OuterRef("pk")).order_by("-tag_name")
+        output_sql(Post.objects.annotate(newest_tagname=Subquery(newest.values("tag_name")[:1])))
+
+        # output_sql(Tags.objects.filter(post=OuterRef("pk")))
+
+        # SELECT "blog_tags"."id", "blog_tags"."tag_name", "blog_tags"."post_id" FROM "blog_tags"
+        # WHERE "blog_tags"."post_id" IN (SELECT U0."id" FROM "blog_post" U0 WHERE U0."published_date" >= '2024-12-23 02:50:52.020441')
+        posts = Post.objects.filter(published_date__gte=(timezone.now() - datetime.timedelta(days=1)))
+        output_sql(Tags.objects.filter(post__in=Subquery(posts.values("pk"))))
+
+    def test_exists(self):
+        """
+        Exists 是一个 Subquery 子类，它使用 SQL EXISTS 语句。
+        """
+
+        # SELECT "blog_post"."id", "blog_post"."title", "blog_post"."content", "blog_post"."created_date", "blog_post"."published_date", "blog_post"."image", "blog_post"."author_id", "blog_post"."status",
+        # EXISTS(SELECT 1 AS "a" FROM "blog_tags" U0 WHERE (U0."post_id" = ("blog_post"."id") AND U0."tag_name" LIKE '%test%' ESCAPE '\') LIMIT 1) AS "tag_exists"
+        # FROM "blog_post"
+        tags = Tags.objects.filter(post=OuterRef("pk"), tag_name__contains="test")
+        output_sql(Post.objects.annotate(tag_exists=Exists(tags)))
+
+        # 取反
+        output_sql(Post.objects.annotate(tag_exists=~Exists(tags)))
+
+        tags = Tags.objects.filter(post=OuterRef("pk")).order_by().values("post")
+        total_comments = tags.annotate(total=Sum(Length("tag_name"))).values("total")
+
+        CharField.register_lookup(Length)
+        # SELECT "blog_post"."id", "blog_post"."title", "blog_post"."content", "blog_post"."created_date", "blog_post"."published_date", "blog_post"."image", "blog_post"."author_id", "blog_post"."status" FROM "blog_post"
+        # WHERE LENGTH("blog_post"."title") > (SELECT SUM(LENGTH(U0."tag_name")) AS "total" FROM "blog_tags" U0 WHERE U0."post_id" = ("blog_post"."id") GROUP BY U0."post_id")
+        output_sql(Post.objects.filter(title__length__gt=Subquery(total_comments)))
+
+    def test_rawsql(self):
+        """
+        RawSQL(sql, params, output_field=None)
+        在表达式无法满足情况，可以使用sql
+        """
+        # SELECT "blog_tags"."id", "blog_tags"."tag_name", "blog_tags"."post_id",
+        # (select id from blog_post where title like '%s%') AS "custom_id" FROM "blog_tags"
+        output_sql(Tags.objects.annotate(custom_id=RawSQL("select id from blog_post where title like %s", ("%s%",))))
+
+        # SELECT "blog_tags"."id", "blog_tags"."tag_name", "blog_tags"."post_id" FROM "blog_tags"
+        # WHERE "blog_tags"."post_id" IN (select id from blog_post where title like '%s%')
+        output_sql(Tags.objects.filter(post_id__in=RawSQL("select id from blog_post where title like %s", ("%s%",))))
 
     def test_sql_monitor(self):
         self.query_set_prepare_data()
