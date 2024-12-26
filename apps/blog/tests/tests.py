@@ -3,6 +3,7 @@ from django.db import connection
 from django.db import reset_queries
 from django.db.models import QuerySet
 from django.test import TestCase
+from faker import Faker
 
 
 def sql_decorator(func):
@@ -61,3 +62,5 @@ class BasedTestCase(TestCase):
         reset_queries()
         # 显示开启debug模式
         settings.DEBUG = True
+
+faker = Faker()

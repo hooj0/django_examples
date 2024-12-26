@@ -259,6 +259,8 @@ class QueryFieldFuncTest(BasedTestCase):
         """
         查询表达式
         https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#
+        表达式API参考
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#expression-api
         编写自定义查询表达式
         https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#writing-your-own-query-expressions
         """

@@ -3,12 +3,12 @@ import datetime
 from django.contrib.auth.models import User
 from django.db import reset_queries
 from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance, Aggregate, OuterRef, Subquery, Exists, CharField
-from django.db.models.expressions import RawSQL
-from django.db.models.functions import Length
+from django.db.models.expressions import RawSQL, Window, F, Expression, Value
+from django.db.models.functions import Length, RowNumber, Rank, Lag
 from django.utils import timezone
 
 from apps.blog.models import Tags, Post
-from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager
+from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, faker
 
 
 class QueryFieldFuncTest(BasedTestCase):
@@ -24,6 +24,8 @@ class QueryFieldFuncTest(BasedTestCase):
         self.post = Post.objects.create(title='this is post.', content='this is content.', author=self.user)
         # 查询所有Post
         print("posts: ", Post.objects.all())
+
+        self.query_set_prepare_data()
         reset_queries()
 
     def test_aggregate_functions(self):
@@ -33,7 +35,6 @@ class QueryFieldFuncTest(BasedTestCase):
         示例参考：
         https://lxblog.com/qianwen/share?shareId=a57834b8-dff7-4b8b-bfa6-a2c9cb31bb4c
         """
-        self.query_set_prepare_data()
         print("----------------test_aggregate_functions--------------------")
         # SELECT COALESCE(AVG("blog_tags"."id"), 0.0) AS "id__avg" FROM "blog_tags"
         output_sql(Tags.objects.aggregate(Avg("id", default=0)))
@@ -80,7 +81,6 @@ class QueryFieldFuncTest(BasedTestCase):
         output_sql(Tags.objects.exclude(tag_name__contains='test').aggregate(total=MySum("id", default=0)))
 
     def test_annotate(self):
-        self.query_set_prepare_data()
         print("----------------test_aggregate_functions--------------------")
         # GROUP BY
         foo = Count("tag_name", filter=Q(id__gt=2))
@@ -178,6 +178,74 @@ class QueryFieldFuncTest(BasedTestCase):
         # WHERE "blog_tags"."post_id" IN (select id from blog_post where title like '%s%')
         output_sql(Tags.objects.filter(post_id__in=RawSQL("select id from blog_post where title like %s", ("%s%",))))
 
+    def test_window_func(self):
+        """
+        查询结果集上执行复杂的分析操作
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/expressions/#window-functions
+        """
+        CharField.register_lookup(Length)
+        output_sql(Post.objects.annotate(avg_rating=Window(expression=Avg(Length("title")), partition_by=[F("author"), F("status")], order_by="published_date__year")))
+
+        # 添加行号
+        # SELECT "blog_post"."id", "blog_post"."title", "blog_post"."content", "blog_post"."created_date", "blog_post"."published_date", "blog_post"."image", "blog_post"."author_id", "blog_post"."status",
+        # ROW_NUMBER() OVER (ORDER BY "blog_post"."published_date" ASC) AS "row_number" FROM "blog_post"
+        output_sql(Post.objects.annotate(row_number=Window(expression=RowNumber(), order_by=F("published_date").asc())))
+
+        # 分组并添加行号
+        output_sql(Post.objects.values("status", "published_date", "author").annotate(row_number=Window(expression=RowNumber(), partition_by=F("status"), order_by=F("published_date").asc())))
+        output_sql(Post.objects.values("status", "published_date", "author").annotate(row_number=Window(expression=Rank(), partition_by=F("status"), order_by=F("published_date").asc())))
+
+        # 计算相邻两天之间的标题长度差异
+        output_sql(Post.objects.values("status", "published_date", "author").annotate(
+                title_size=Window(expression=Lag("title", default=0), order_by=F("published_date").asc()),
+                compare_size=Length("title_size") - Length("title")
+            )
+        )
+
+    def test_custom_expression(self):
+        """
+        自定义表达式
+        """
+
+        class Coalesce(Expression):
+            template = "COALESCE( %(expressions)s )"
+
+            def __init__(self, expressions, output_field):
+                super().__init__(output_field=output_field)
+                if len(expressions) < 2:
+                    raise ValueError("expressions must have at least 2 elements")
+                for expression in expressions:
+                    if not hasattr(expression, "resolve_expression"):
+                        raise TypeError("%r is not an Expression" % expression)
+                self.expressions = expressions
+
+            def resolve_expression(self, query=..., allow_joins=..., reuse=..., summarize=..., for_save=..., ):
+                c = self.copy()
+                c.is_summary = summarize
+                for pos, expression in enumerate(self.expressions):
+                    c.expressions[pos] = expression.resolve_expression(query, allow_joins, reuse, summarize, for_save)
+                return c
+
+            def as_sql(self, compiler, connection, template=None):
+                sql_expressions, sql_params = [], []
+                for expression in self.expressions:
+                    sql, params = compiler.compile(expression)
+                    sql_expressions.append(sql)
+                    sql_params.extend(params)
+                template = template or self.template
+                data = {"expressions":",".join(sql_expressions)}
+                print(data)
+                return template % data, sql_params
+
+
+            def get_source_expressions(self):
+                return self.expressions
+
+            def set_source_expressions(self, expressions):
+                self.expressions = expressions
+
+        output_sql(Post.objects.values("id", "title", "content").annotate(tag_line=Coalesce([F("title"), F("content"), Value("haha just i do.")], output_field=CharField(max_length=100))))
+
     def test_sql_monitor(self):
         self.query_set_prepare_data()
 
@@ -210,4 +278,7 @@ class QueryFieldFuncTest(BasedTestCase):
         Tags.objects.create(tag_name='of HttpResponse', post=self.post)
         Tags.objects.create(tag_name='OF', post=self.post)
         print("prepare data: ", Tags.objects.all())
+
+        Post.objects.create(title=faker.name(), content=faker.text(max_nb_chars=100), author=self.user, status=True)
+        Post.objects.create(title=faker.name(), content=faker.text(max_nb_chars=100), author=self.user, status=False)
         reset_queries()
