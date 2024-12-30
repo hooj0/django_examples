@@ -1,10 +1,12 @@
 import datetime
+from _pyrepl.windows_console import Char
 
 from django.contrib.auth.models import User
 from django.db import reset_queries
 from django.db.models import Avg, Max, Sum, Count, Min, FloatField, Q, StdDev, Variance, Aggregate, OuterRef, Subquery, Exists, CharField
 from django.db.models.expressions import RawSQL, Window, F, Expression, Value
-from django.db.models.functions import Length, RowNumber, Rank, Lag
+from django.db.models.fields import TextField
+from django.db.models.functions import Length, RowNumber, Rank, Lag, Chr, Concat
 from django.utils import timezone
 
 from apps.blog.models import Tags, Post
@@ -14,6 +16,8 @@ from apps.blog.tests.tests import BasedTestCase, output_sql, SqlContextManager, 
 class QueryFieldFuncTest(BasedTestCase):
     """
     https://docs.djangoproject.com/zh-hans/5.1/ref/models/querysets/#top
+    数据库函数：
+    https://docs.djangoproject.com/zh-hans/5.1/ref/models/database-functions/
     """
 
     def setUp(self):
@@ -245,6 +249,35 @@ class QueryFieldFuncTest(BasedTestCase):
                 self.expressions = expressions
 
         output_sql(Post.objects.values("id", "title", "content").annotate(tag_line=Coalesce([F("title"), F("content"), Value("haha just i do.")], output_field=CharField(max_length=100))))
+
+    def test_db_func(self):
+        """
+        数据库函数
+        https://docs.djangoproject.com/zh-hans/5.1/ref/models/database-functions/#top
+        """
+        print("-------------------------文本函数------------------------")
+        # ASSCI数字转字符
+        output_sql(Post.objects.annotate(tmp=Chr(67)).values_list("tmp", flat=True).first())
+        output_sql(Post.objects.annotate(tmp=Concat("title", Value("-"), "id", Value("SSS"), output_field=TextField())).values_list("tmp", flat=True).first())
+
+        # Left
+        # Length
+        # Lower
+        # LPad
+        # LTrim
+        # MD5
+        # Ord
+        # Repeat
+        # Replace
+        # Reverse
+        # Right
+        # RPad
+        # RTrim
+        # SHA1、SHA224`、SHA256`、SHA384` 和 SHA512。
+        # StrIndex
+        # Substr
+        # Trim
+        # Upper
 
     def test_sql_monitor(self):
         self.query_set_prepare_data()
